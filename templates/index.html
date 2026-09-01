@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tutor Lamp AI Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MediaPipe FaceMesh & Camera Utils CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <style>
+        body { background: #090d16; color: #f3f4f6; font-family: sans-serif; }
+        .glass { background: rgba(17, 24, 39, 0.58); backdrop-filter: blur(14px) saturate(130%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: inset 0 1px rgba(255,255,255,.1), 0 16px 40px rgba(0,0,0,.16); }
+        .pulse-glow { box-shadow: 0 0 24px rgba(99, 102, 241, 0.4), inset 0 1px rgba(255,255,255,.2); }
+        button, input, .glass { border-radius: 14px; }
+
+        /* Custom Scrollbar for Chat Box */
+        #chatLog::-webkit-scrollbar { width: 6px; }
+        #chatLog::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 8px; }
+        #chatLog::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.5); border-radius: 8px; }
+        #chatLog::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.8); }
+    </style>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body class="h-screen w-screen flex flex-col p-6 overflow-hidden">
+    <!-- Header -->
+    <header class="flex justify-between items-center mb-4 flex-shrink-0">
+        <div class="flex items-center space-x-3">
+            <button id="openSidebar" class="p-2 rounded-xl glass hover:bg-gray-800 text-gray-300 transition focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div class="w-4 h-4 rounded-full bg-indigo-500 animate-ping"></div>
+            <h1 class="text-2xl font-bold tracking-wider text-indigo-400">TUTOR LAMP <span class="text-xs px-2 py-1 bg-indigo-900 text-indigo-200 rounded-full">Dashboard</span></h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <a href="/" class="px-4 py-2 glass rounded-xl text-sm font-semibold hover:bg-gray-800 text-gray-300 border border-gray-700">← Landing</a>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Layout -->
+    <div class="grid grid-cols-12 gap-6 flex-1 min-h-0 overflow-hidden">
+        
+        <!-- Left Side: Fixed Size Camera & Pomodoro Timer -->
+        <div class="col-span-12 flex flex-col space-y-4 h-full min-h-0">
+            
+            <!-- Fixed Height Camera Container -->
+            <div class="glass rounded-2xl p-4 flex-1 flex flex-col min-h-0 relative overflow-hidden">
+                <div class="flex justify-between items-center mb-2 flex-shrink-0">
+                    <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Focus Detection Monitor</span>
+                    <div class="flex items-center gap-3">
+                        <span id="statusBadge" class="px-4 py-2 rounded-xl text-sm font-semibold glass text-green-400 border border-green-500/30 bg-green-950/20">Focused (Facing Monitor)</span>
+                        <span id="poseAngleText" class="text-xs text-indigo-400 font-mono">Yaw: 0° | Pitch: 0°</span>
+                    </div>
+                </div>
+                <div class="relative flex-1 w-full rounded-xl overflow-hidden border border-gray-800 bg-black flex items-center justify-center min-h-0">
+                    <video id="webcam" class="hidden" autoplay playsinline></video>
+                    <canvas id="outputCanvas" class="w-full h-full object-contain transform -scale-x-100"></canvas>
+                </div>
+            </div>
+
+            <!-- Fixed Height Pomodoro Timer Widget -->
+            <div class="glass rounded-2xl p-5 flex flex-col justify-between border border-indigo-500/20 flex-shrink-0">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Pomodoro Focus Timer</span>
+                    <span id="timerMode" class="text-xs px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-500/30 font-semibold">Study Session</span>
+                </div>
+
+                <div class="flex items-center justify-between gap-4">
+                    <div id="timerDisplay" class="text-4xl font-extrabold text-indigo-400 tracking-wider font-mono">25:00</div>
+                    <div class="flex items-center gap-2">
+                        <input id="customTimerMinutes" type="number" min="1" max="180" value="25" class="w-20 bg-slate-900/70 border border-slate-600 text-white px-2 py-2 text-sm rounded-lg focus:outline-none focus:border-indigo-400" aria-label="Custom study minutes" />
+                        <button id="applyCustomTimerBtn" onclick="applyCustomTimer()" class="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-xs transition">Set</button>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button id="startTimerBtn" onclick="toggleTimer()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition">Start</button>
+                        <button onclick="resetTimer()" class="px-4 py-2 glass hover:bg-gray-800 text-gray-300 font-bold rounded-xl text-sm transition">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // ATTACHMENT STATE MANAGEMENT
+        let selectedFile = null;
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('fileNameDisplay').innerText = `📎 ${file.name}`;
+                document.getElementById('filePreview').classList.remove('hidden');
+            }
+        }
+
+        function clearAttachment() {
+            selectedFile = null;
+            document.getElementById('fileAttachment').value = '';
+            document.getElementById('filePreview').classList.add('hidden');
+        }
+
+        // POMODORO TIMER SYSTEM
+        let customTimerMinutes = 25;
+        let timerSeconds = customTimerMinutes * 60;
+        let timerInterval = null;
+        let isTimerRunning = false;
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timerSeconds / 60);
+            const seconds = timerSeconds % 60;
+            document.getElementById('timerDisplay').innerText = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimerModeLabel() {
+            const modeEl = document.getElementById('timerMode');
+            if (modeEl) {
+                modeEl.innerText = `Custom ${customTimerMinutes} min`;
+            }
+        }
+
+        function applyCustomTimer() {
+            const input = document.getElementById('customTimerMinutes');
+            const requestedMinutes = Number(input.value);
+            const safeMinutes = Math.max(1, Math.min(180, Number.isFinite(requestedMinutes) ? requestedMinutes : 25));
+
+            customTimerMinutes = safeMinutes;
+            timerSeconds = safeMinutes * 60;
+            updateTimerModeLabel();
+            updateTimerDisplay();
+
+            if (!isTimerRunning) {
+                document.getElementById('startTimerBtn').innerText = "Start";
+                document.getElementById('startTimerBtn').className = "px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition";
+            }
+
+            input.value = safeMinutes;
+        }
+
+        function toggleTimer() {
+            if (isTimerRunning) {
+                clearInterval(timerInterval);
+                isTimerRunning = false;
+                document.getElementById('startTimerBtn').innerText = "Resume";
+                document.getElementById('startTimerBtn').className = "px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition";
+            } else {
+                isTimerRunning = true;
+                document.getElementById('startTimerBtn').innerText = "Pause";
+                document.getElementById('startTimerBtn').className = "px-5 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded-xl text-sm transition";
+                
+                timerInterval = setInterval(() => {
+                    if (timerSeconds > 0) {
+                        timerSeconds--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        isTimerRunning = false;
+                        alert("Pomodoro Session Complete! Take a break.");
+                        resetTimer();
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            timerSeconds = customTimerMinutes * 60;
+            updateTimerDisplay();
+            document.getElementById('startTimerBtn').innerText = "Start";
+            document.getElementById('startTimerBtn').className = "px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm transition";
+        }
+
+        updateTimerModeLabel();
+        updateTimerDisplay();
+
+        // MEDIAPIPE FACE MESH & LOGGING
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('outputCanvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const statusBadge = document.getElementById('statusBadge');
+        const poseAngleText = document.getElementById('poseAngleText');
+
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+        });
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults(onResults);
+
+        let lastLogTime = 0;
+        let latestFaceResults = null;
+
+        function renderVideoFrame() {
+            if (!videoElement || !canvasElement) return;
+            if (videoElement.readyState >= 2) {
+                const width = videoElement.videoWidth || 640;
+                const height = videoElement.videoHeight || 480;
+                if (canvasElement.width !== width || canvasElement.height !== height) {
+                    canvasElement.width = width;
+                    canvasElement.height = height;
+                }
+                canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+                canvasCtx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+
+                if (latestFaceResults && latestFaceResults.multiFaceLandmarks && latestFaceResults.multiFaceLandmarks.length > 0) {
+                    const landmarks = latestFaceResults.multiFaceLandmarks[0];
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, { color: '#6366F133', lineWidth: 1 });
+                    drawConnectors(canvasCtx, landmarks, FACEMESH_FACE_OVAL, { color: '#10B981', lineWidth: 2 });
+                }
+            }
+            requestAnimationFrame(renderVideoFrame);
+        }
+
+        function onResults(results) {
+            if (!results || !results.image) return;
+            latestFaceResults = results;
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+
+                const noseTip = landmarks[1];
+                const leftCheek = landmarks[234];
+                const rightCheek = landmarks[454];
+                const chin = landmarks[152];
+                const forehead = landmarks[10];
+
+                const faceCenterX = (leftCheek.x + rightCheek.x) / 2;
+                const faceCenterY = (forehead.y + chin.y) / 2;
+                const faceWidth = Math.abs(rightCheek.x - leftCheek.x);
+                const faceHeight = Math.abs(chin.y - forehead.y);
+
+                const yawDegree = Math.round(((faceCenterX - 0.5) * 2) * 90);
+                const pitchDegree = Math.round(((faceCenterY - 0.5) * 2) * 90);
+                poseAngleText.innerText = `Yaw: ${yawDegree}° | Pitch: ${pitchDegree}°`;
+
+                const isFaceCentered = faceCenterX > 0.18 && faceCenterX < 0.82 && faceCenterY > 0.2 && faceCenterY < 0.8;
+                const faceLargeEnough = faceWidth > 0.18 && faceHeight > 0.22;
+
+                let currentStatus = "Focused (Facing Monitor)";
+                let isFocused = isFaceCentered && faceLargeEnough;
+
+                if (!isFaceCentered || !faceLargeEnough) {
+                    currentStatus = "Distracted";
+                    isFocused = false;
+                }
+
+                updateStatus(currentStatus, isFocused);
+
+                const now = Date.now();
+                if (now - lastLogTime > 3000) {
+                    lastLogTime = now;
+                    fetch('/log_event', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: currentStatus })
+                    }).catch(e => console.log(e));
+                }
+
+            } else {
+                poseAngleText.innerText = "Yaw: N/A | Pitch: N/A";
+                updateStatus("Distracted (No Face Detected)", false);
+            }
+        }
+
+        function updateStatus(text, isFocused) {
+            statusBadge.innerText = text;
+            if (isFocused) {
+                statusBadge.className = "px-4 py-2 rounded-xl text-sm font-semibold glass text-green-400 border border-green-500/30 bg-green-950/20";
+            } else {
+                statusBadge.className = "px-4 py-2 rounded-xl text-sm font-semibold glass text-red-400 border border-red-500/40 bg-red-950/20";
+            }
+        }
+
+        let faceProcessing = false;
+        let lastFaceSendTime = 0;
+
+        requestAnimationFrame(renderVideoFrame);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                const now = performance.now();
+                if (faceProcessing || (now - lastFaceSendTime) < 100) {
+                    return;
+                }
+                lastFaceSendTime = now;
+                faceProcessing = true;
+                try {
+                    await faceMesh.send({ image: videoElement });
+                } finally {
+                    faceProcessing = false;
+                }
+            },
+            width: 640,
+            height: 480
+        });
+        camera.start();
+
+        // VOICE SYSTEM WITH STOP TRIGGER
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isSpeaking = false;
+        let isProcessing = false;
+        let voiceActive = false;
+
+        function toggleVoiceSystem() {
+            if (voiceActive) {
+                stopVoiceSystem("Voice assistant stopped.");
+            } else {
+                initVoiceSystem();
+            }
+        }
+
+        function initVoiceSystem() {
+            if (!SpeechRecognition) {
+                alert("Please use Google Chrome or Microsoft Edge.");
+                return;
+            }
+
+            voiceActive = true;
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                document.getElementById('voiceStatusText').innerText = "🟢 Listening (Say 'Tutor bot stop' to end)";
+                document.getElementById('startVoiceBtn').className = "w-full py-3 rounded-xl bg-green-950/60 border border-green-500/40 text-green-300 font-bold transition flex items-center justify-center space-x-2 mb-4";
+                document.getElementById('startVoiceBtn').setAttribute("onclick", "toggleVoiceSystem()");
+            };
+
+            recognition.onresult = async (event) => {
+                if (isSpeaking || isProcessing || !voiceActive) return;
+
+                const rawTranscript = event.results[0][0].transcript.trim().toLowerCase();
+                if (rawTranscript.length < 2) return;
+
+                if (rawTranscript.includes("tutor bot stop") || rawTranscript === "stop" || rawTranscript.includes("stop voice")) {
+                    stopVoiceSystem("Voice assistant turned off.");
+                    return;
+                }
+
+                isProcessing = true;
+                
+                let query = rawTranscript;
+                if (query.startsWith("hey tutor bot")) {
+                    query = query.replace(/hey tutor bot/i, "").trim();
+                } else if (query.startsWith("tutor bot")) {
+                    query = query.replace(/tutor bot/i, "").trim();
+                }
+
+                if (!query) {
+                    const greeting = "I'm listening, go ahead!";
+                    appendMessage("Tutor Lamp", greeting, "text-indigo-400", "bg-indigo-950/30 border-indigo-500/30");
+                    speakText(greeting);
+                    isProcessing = false;
+                    return;
+                }
+
+                appendMessage("Student", query, "text-gray-300", "bg-gray-800/40");
+                await queryAI(query);
+                isProcessing = false;
+            };
+
+            recognition.onerror = () => {
+                isProcessing = false;
+                if (voiceActive) restartRecognition();
+            };
+
+            recognition.onend = () => {
+                if (voiceActive && !isSpeaking && !isProcessing) {
+                    restartRecognition();
+                }
+            };
+
+            try { recognition.start(); } catch(e) {}
+        }
+
+        function stopVoiceSystem(message) {
+            voiceActive = false;
+            isProcessing = false;
+            isSpeaking = false;
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+
+            if (recognition) {
+                try { recognition.abort(); } catch(e) {}
+                recognition = null;
+            }
+
+            document.getElementById('voiceStatusText').innerText = "🎤 Start Voice Assistant";
+            document.getElementById('startVoiceBtn').className = "w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold transition flex items-center justify-center space-x-2 pulse-glow mb-4";
+            document.getElementById('startVoiceBtn').setAttribute("onclick", "initVoiceSystem()");
+
+            if (message) {
+                appendMessage("Tutor Lamp", message, "text-red-400", "bg-red-950/30 border-red-500/30");
+            }
+        }
+
+        function restartRecognition() {
+            setTimeout(() => {
+                if (recognition && voiceActive && !isSpeaking && !isProcessing) {
+                    try { recognition.start(); } catch(e) {}
+                }
+            }, 300);
+        }
+
+        async function sendManualQuery() {
+            const input = document.getElementById('manualQuery');
+            const query = input.value.trim();
+
+            if (!query && !selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('query', query || "Please analyze this homework attachment and help me out.");
+            if (selectedFile) {
+                formData.append('file', selectedFile);
+            }
+
+            const displayMsg = selectedFile 
+                ? `${query ? query + ' ' : ''}[Attached: ${selectedFile.name}]` 
+                : query;
+
+            input.value = "";
+            clearAttachment();
+            
+            appendMessage("Student", displayMsg, "text-gray-300", "bg-gray-800/40");
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                appendMessage("Tutor Lamp", data.response, "text-indigo-400", "bg-indigo-950/30 border-indigo-500/30");
+                speakText(data.response);
+            } catch (err) {
+                appendMessage("Tutor Lamp", "Error processing request.", "text-red-400", "bg-red-950/30 border-red-500/30");
+                if (voiceActive) restartRecognition();
+            }
+        }
+
+        async function queryAI(query) {
+            const formData = new FormData();
+            formData.append('query', query);
+
+            try {
+                const res = await fetch('/ask', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                appendMessage("Tutor Lamp", data.response, "text-indigo-400", "bg-indigo-950/30 border-indigo-500/30");
+                speakText(data.response);
+            } catch (err) {
+                appendMessage("Tutor Lamp", "Error connecting to AI.", "text-red-400", "bg-red-950/30 border-red-500/30");
+                if (voiceActive) restartRecognition();
+            }
+        }
+
+        function appendMessage(sender, msg, colorClass, bgClass) {
+            const log = document.getElementById('chatLog');
+            log.innerHTML += `
+                <div class="${bgClass} p-3 rounded-lg border flex-shrink-0">
+                    <span class="text-xs font-bold ${colorClass} block mb-1">${sender}</span>
+                    <p class="text-gray-200">${msg}</p>
+                </div>
+            `;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window && voiceActive) {
+                isSpeaking = true;
+                
+                if (recognition) {
+                    try { recognition.stop(); } catch(e) {}
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                const finishSpeech = () => {
+                    isSpeaking = false;
+                    if (voiceActive) restartRecognition();
+                };
+
+                utterance.onend = finishSpeech;
+                utterance.onerror = finishSpeech;
+                window.speechSynthesis.speak(utterance);
+            } else {
+                if (voiceActive) restartRecognition();
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
+</body>
+</html>

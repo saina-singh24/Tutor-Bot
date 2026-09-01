@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tutor Lamp - Real Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <style>
+        body { background: #090d16; color: #f3f4f6; font-family: sans-serif; }
+        .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .chart-container { position: relative; height: 260px; }
+        .chart-container canvas { width: 100% !important; height: 100% !important; }
+    </style>
+</head>
+<body class="p-8">
+    <div class="max-w-6xl mx-auto space-y-6">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-indigo-400">Study Session Analytics</h1>
+                <p class="text-sm text-gray-400 mt-1">Live focus overview and session insights</p>
+            </div>
+            <a href="/app" class="px-4 py-2 glass rounded-xl text-sm font-semibold hover:bg-gray-800">← Back to Dashboard</a>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="glass p-5 rounded-2xl border border-green-500/20">
+                <span class="text-xs uppercase text-gray-400 font-bold">Focused</span>
+                <p id="focusedStat" class="text-3xl font-extrabold text-green-400 mt-2">0</p>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-red-500/20">
+                <span class="text-xs uppercase text-gray-400 font-bold">Distracted</span>
+                <p id="distractedStat" class="text-3xl font-extrabold text-red-400 mt-2">0</p>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-indigo-500/20">
+                <span class="text-xs uppercase text-gray-400 font-bold">Focus Rate</span>
+                <p id="focusRateStat" class="text-3xl font-extrabold text-indigo-400 mt-2">0%</p>
+            </div>
+            <div class="glass p-5 rounded-2xl border border-yellow-500/20">
+                <span class="text-xs uppercase text-gray-400 font-bold">Current Streak</span>
+                <p id="streakStat" class="text-3xl font-extrabold text-yellow-400 mt-2">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-8 glass p-6 rounded-2xl">
+                <h2 class="text-sm font-bold text-gray-300 mb-4">Focus Score Over Time</h2>
+                <div class="chart-container">
+                    <canvas id="lineChart"></canvas>
+                </div>
+            </div>
+            <div class="col-span-4 glass p-6 rounded-2xl">
+                <h2 class="text-sm font-bold text-gray-300 mb-4">Focus Ratio</h2>
+                <div class="chart-container" style="height: 260px;">
+                    <canvas id="pieChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-8 glass p-6 rounded-2xl">
+                <h2 class="text-sm font-bold text-gray-300 mb-4">Hourly Focus Breakdown</h2>
+                <div class="chart-container">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+            <div class="col-span-4 glass p-6 rounded-2xl">
+                <h2 class="text-sm font-bold text-gray-300 mb-4">Session Snapshot</h2>
+                <div id="summaryList" class="space-y-3 text-sm text-gray-300"></div>
+                <button id="saveSessionBtn" class="mt-4 w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2 px-3 rounded-xl">
+                    Save Session for Today
+                </button>
+            </div>
+        </div>
+
+        <div class="glass p-6 rounded-2xl mt-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-bold text-gray-300">Saved Daily Sessions</h2>
+                <button id="refreshHistoryBtn" class="text-xs px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-gray-200">
+                    Refresh
+                </button>
+            </div>
+            <div id="historyList" class="space-y-3"></div>
+        </div>
+    </div>
+
+    <script>
+        let lineChart, pieChart, barChart;
+
+        function safeDataArray(data, fallbackLength = 6) {
+            if (!Array.isArray(data) || !data.length) {
+                return Array.from({ length: fallbackLength }, () => 0);
+            }
+            return data;
+        }
+
+        function buildFallbackCharts() {
+            return {
+                labels: ['Start', 'Check 2', 'Check 3', 'Check 4', 'Check 5', 'Now'],
+                scores: [0, 0, 0, 0, 0, 0],
+                hourly: [
+                    { label: '08:00', focused: 0, distracted: 0 },
+                    { label: '09:00', focused: 0, distracted: 0 },
+                    { label: '10:00', focused: 0, distracted: 0 },
+                    { label: '11:00', focused: 0, distracted: 0 },
+                    { label: '12:00', focused: 0, distracted: 0 },
+                    { label: '13:00', focused: 0, distracted: 0 }
+                ]
+            };
+        }
+
+        function renderSummary(data) {
+            const total = data.total_checks || 0;
+            const summaryList = document.getElementById('summaryList');
+            const statusCounts = data.status_counts || {};
+            const latestStatus = data.latest_status || 'No data';
+            const focusedBreakdown = statusCounts['Focused (Facing Monitor)'] || statusCounts['Focused'] || 0;
+            const distractedBreakdown = statusCounts['Distracted'] || statusCounts['Distracted (No Face Detected)'] || 0;
+
+            summaryList.innerHTML = `
+                <div class="glass p-3 rounded-xl border border-gray-700">
+                    <div class="text-xs uppercase text-gray-400">Total checks</div>
+                    <div class="text-2xl font-bold text-indigo-400 mt-1">${total}</div>
+                </div>
+                <div class="glass p-3 rounded-xl border border-gray-700">
+                    <div class="text-xs uppercase text-gray-400">Latest focus rate</div>
+                    <div class="text-2xl font-bold text-green-400 mt-1">${data.focus_rate || 0}%</div>
+                </div>
+                <div class="glass p-3 rounded-xl border border-gray-700">
+                    <div class="text-xs uppercase text-gray-400">Recent streak</div>
+                    <div class="text-2xl font-bold text-yellow-400 mt-1">${data.focus_streak || 0}</div>
+                </div>
+                <div class="glass p-3 rounded-xl border border-gray-700">
+                    <div class="text-xs uppercase text-gray-400">Latest status</div>
+                    <div class="text-sm font-bold mt-1 ${latestStatus.toLowerCase().includes('distracted') ? 'text-red-400' : 'text-green-400'}">${latestStatus}</div>
+                    <div class="text-[10px] text-gray-400 mt-1">Focused ${focusedBreakdown} / Distracted ${distractedBreakdown}</div>
+                </div>
+            `;
+        }
+
+        function renderHistory(history) {
+            const historyList = document.getElementById('historyList');
+            if (!history || !history.length) {
+                historyList.innerHTML = '<div class="text-sm text-gray-400">No saved sessions yet.</div>';
+                return;
+            }
+
+            historyList.innerHTML = history.map(item => `
+                <div class="glass p-3 rounded-xl border border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-indigo-300">${item.date}</span>
+                        <span class="text-xs text-gray-400">${item.focus_rate}% focus</span>
+                    </div>
+                    <div class="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-300">
+                        <div><span class="text-gray-400 block">Focused</span><strong class="text-green-400">${item.focused_count}</strong></div>
+                        <div><span class="text-gray-400 block">Distracted</span><strong class="text-red-400">${item.distracted_count}</strong></div>
+                        <div><span class="text-gray-400 block">Checks</span><strong>${item.total_checks}</strong></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function fetchHistory() {
+            const response = await fetch('/get_session_history');
+            const data = await response.json();
+            renderHistory(data.history || []);
+        }
+
+        async function saveSession() {
+            const response = await fetch('/save_session', { method: 'POST' });
+            const data = await response.json();
+            await fetchAnalytics();
+            await fetchHistory();
+            alert(`Session saved for ${data.session_date}.`);
+        }
+
+        async function fetchAnalytics() {
+            try {
+                const res = await fetch('/get_analytics');
+                if (!res.ok) {
+                    throw new Error(`Analytics request failed: ${res.status}`);
+                }
+                const data = await res.json();
+                const accent = getComputedStyle(document.documentElement).getPropertyValue('--user-accent').trim() || '#6366f1';
+                const fallback = buildFallbackCharts();
+
+                const safeData = {
+                    focused_count: Number(data.focused_count || 0),
+                    distracted_count: Number(data.distracted_count || 0),
+                    focus_rate: Number(data.focus_rate || 0),
+                    focus_streak: Number(data.focus_streak || 0),
+                    total_checks: Number(data.total_checks || 0),
+                    labels: Array.isArray(data.labels) && data.labels.length ? data.labels : fallback.labels,
+                    scores: safeDataArray(data.scores, fallback.scores.length),
+                    hourly: Array.isArray(data.hourly) && data.hourly.length ? data.hourly : fallback.hourly,
+                    status_counts: data.status_counts || {},
+                    latest_status: data.latest_status || 'No data'
+                };
+
+                document.getElementById('focusedStat').innerText = safeData.focused_count;
+                document.getElementById('distractedStat').innerText = safeData.distracted_count;
+                document.getElementById('focusRateStat').innerText = `${safeData.focus_rate}%`;
+                document.getElementById('streakStat').innerText = safeData.focus_streak;
+                renderSummary(safeData);
+
+                if (lineChart) lineChart.destroy();
+                lineChart = new Chart(document.getElementById('lineChart'), {
+                    type: 'line',
+                    data: {
+                        labels: safeData.labels,
+                        datasets: [{
+                            label: 'Focus State (100 = Focused, 0 = Distracted)',
+                            data: safeData.scores,
+                            borderColor: accent,
+                            backgroundColor: `${accent}33`,
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { min: 0, max: 100 } }
+                    }
+                });
+
+                if (pieChart) pieChart.destroy();
+                pieChart = new Chart(document.getElementById('pieChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Focused', 'Distracted'],
+                        datasets: [{
+                            data: [safeData.focused_count, safeData.distracted_count],
+                            backgroundColor: ['#10b981', '#ef4444']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
+
+                if (barChart) barChart.destroy();
+                const hourlyLabels = (safeData.hourly || []).map(item => item.label);
+                const focusedHourly = (safeData.hourly || []).map(item => item.focused || 0);
+                const distractedHourly = (safeData.hourly || []).map(item => item.distracted || 0);
+
+                barChart = new Chart(document.getElementById('barChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: hourlyLabels,
+                        datasets: [
+                            { label: 'Focused', data: focusedHourly, backgroundColor: '#10b981' },
+                            { label: 'Distracted', data: distractedHourly, backgroundColor: '#ef4444' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            } catch (error) {
+                console.error(error);
+                if (!lineChart) {
+                    const fallback = buildFallbackCharts();
+                    const accent = getComputedStyle(document.documentElement).getPropertyValue('--user-accent').trim() || '#6366f1';
+
+                    lineChart = new Chart(document.getElementById('lineChart'), {
+                        type: 'line',
+                        data: { labels: fallback.labels, datasets: [{ label: 'Focus State', data: fallback.scores, borderColor: accent, backgroundColor: `${accent}33`, fill: true, tension: 0.3 }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } } }
+                    });
+
+                    pieChart = new Chart(document.getElementById('pieChart'), {
+                        type: 'doughnut',
+                        data: { labels: ['Focused', 'Distracted'], datasets: [{ data: [0, 0], backgroundColor: ['#10b981', '#ef4444'] }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                    });
+
+                    barChart = new Chart(document.getElementById('barChart'), {
+                        type: 'bar',
+                        data: { labels: fallback.hourly.map(item => item.label), datasets: [{ label: 'Focused', data: fallback.hourly.map(item => item.focused), backgroundColor: '#10b981' }, { label: 'Distracted', data: fallback.hourly.map(item => item.distracted), backgroundColor: '#ef4444' }] },
+                        options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                    });
+                }
+            }
+        }
+
+        document.getElementById('saveSessionBtn').addEventListener('click', saveSession);
+        document.getElementById('refreshHistoryBtn').addEventListener('click', fetchHistory);
+
+        window.addEventListener('tutorLampThemeChange', fetchAnalytics);
+        fetchAnalytics();
+        fetchHistory();
+        setInterval(fetchAnalytics, 3000);
+    </script>
+</body>
+</html>

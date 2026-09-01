@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Tutor Lamp | Study with clarity</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--ink: #18251f;
+			--muted: #64736b;
+			--paper: #f4f0e8;
+			--cream: #fffdf8;
+			--lime: #c8f06b;
+			--coral: #f27d62;
+			--line: rgba(24, 37, 31, .14);
+				--lime: var(--user-accent);
+		}
+		* { box-sizing: border-box; }
+		body { margin: 0; color: var(--ink); background: var(--paper); font-family: 'DM Sans', sans-serif; }
+		body::before, body::after { content: ''; position: fixed; z-index: 0; width: 260px; height: 190px; border-radius: 50%; pointer-events: none; filter: url(#liquid-goo); opacity: .22; animation: liquid-drift 18s ease-in-out infinite alternate; }
+		body::before { top: 8%; right: 8%; background: var(--user-accent); }
+		body::after { left: -90px; bottom: 12%; background: var(--coral); animation-delay: -7s; }
+		@keyframes liquid-drift { from { transform: translate3d(0, 0, 0) scale(1); border-radius: 45% 55% 62% 38%; } to { transform: translate3d(34px, -20px, 0) scale(1.18); border-radius: 64% 36% 44% 56%; } }
+		.page { position: relative; z-index: 1; min-height: 100vh; overflow: hidden; background: radial-gradient(circle at 86% 8%, var(--user-accent-glow), transparent 23rem), var(--paper); }
+		.shell { width: min(1160px, calc(100% - 48px)); margin: auto; }
+		nav { height: 86px; display: flex; align-items: center; justify-content: space-between; }
+		.brand { display: flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -.03em; }
+		.brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: var(--ink); color: var(--lime); font-size: 17px; }
+		.nav-link { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
+		.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 72px; align-items: center; padding: 76px 0 92px; }
+		.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #57702d; text-transform: uppercase; letter-spacing: .13em; font-size: 11px; font-weight: 700; }
+		.eyebrow::before { content: ''; width: 23px; height: 2px; background: var(--coral); }
+		h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -.055em; }
+		h1 { max-width: 650px; font-size: clamp(3.5rem, 7vw, 6.3rem); line-height: .93; margin: 20px 0 26px; }
+		.hero-copy { max-width: 505px; color: var(--muted); font-size: 18px; line-height: 1.6; }
+		.actions { display: flex; align-items: center; gap: 22px; margin-top: 34px; }
+		.primary { display: inline-flex; align-items: center; gap: 16px; padding: 15px 19px; color: var(--user-accent-text); background: var(--user-accent); border: 1px solid var(--ink); border-radius: 4px; text-decoration: none; font-weight: 700; box-shadow: 5px 5px 0 var(--ink); transition: transform .2s, box-shadow .2s; }
+		.primary:hover { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+		.arrow { font-size: 20px; line-height: 0; }
+		.hero-note { color: var(--muted); font-size: 13px; font-weight: 600; }
+		.orbit { position: relative; min-height: 390px; }
+		.orbit::before { content: ''; position: absolute; inset: 23px 5px 0 21px; border: 1px solid var(--user-accent); border-radius: 50%; opacity: .28; transform: rotate(-13deg); }
+		.lamp-card { position: absolute; inset: 46px 14px 38px 47px; padding: 29px; display: flex; flex-direction: column; justify-content: space-between; background: color-mix(in srgb, var(--ink) 78%, transparent); color: white; border: 1px solid rgba(255,255,255,.2); backdrop-filter: blur(14px) saturate(135%); border-radius: 5px; transform: rotate(4deg); box-shadow: inset 0 1px rgba(255,255,255,.16), 12px 13px 0 var(--coral), 0 24px 50px rgba(24,37,31,.16); }
+		.lamp-card::after { content: ''; position: absolute; width: 120px; height: 120px; right: -34px; top: -42px; border-radius: 50%; border: 1px solid var(--user-accent); opacity: .7; box-shadow: 0 0 22px var(--user-accent-soft); }
+		.mini-label { color: var(--lime); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+		.lamp-card h2 { margin: 17px 0 0; font-size: 42px; line-height: 1; }
+		.signal { display: flex; align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.15); color: #b7c2bb; font-size: 13px; }
+		.signal-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(200,240,107,.13); }
+		.section { padding: 82px 0; border-top: 1px solid var(--line); }
+		.section-head { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 35px; }
+		h2.section-title { max-width: 500px; font-size: 43px; line-height: 1.02; margin: 0; }
+		.section-intro { max-width: 330px; color: var(--muted); line-height: 1.5; font-size: 14px; }
+		.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+		.feature { min-height: 220px; padding: 24px; border: 1px solid rgba(255,255,255,.25); background: color-mix(in srgb, var(--cream) 78%, transparent); backdrop-filter: blur(10px) saturate(125%); border-radius: 4px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: inset 0 1px rgba(255,255,255,.45), 0 14px 32px rgba(24,37,31,.07); }
+		.feature:nth-child(2) { background: var(--coral); }
+		.feature:nth-child(3) { background: var(--ink); color: white; }
+		.feature-number { font-family: 'Space Grotesk', sans-serif; font-size: 13px; opacity: .6; }
+		.feature h3 { font-size: 23px; margin: 30px 0 8px; letter-spacing: -.04em; }
+		.feature p { color: var(--muted); line-height: 1.5; font-size: 14px; margin: 0; }
+		.feature:nth-child(2) p, .feature:nth-child(3) p { color: inherit; opacity: .76; }
+		.roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+		.roadmap-item { padding: 23px 25px; border: 1px solid var(--line); background: rgba(255,253,248,.46); display: flex; gap: 20px; align-items: flex-start; }
+		.status { padding: 5px 8px; background: var(--user-accent); color: var(--user-accent-text); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; white-space: nowrap; }
+		.roadmap h3 { font-size: 18px; margin: 0 0 7px; letter-spacing: -.03em; }
+		.roadmap p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+		footer { padding: 30px 0 42px; display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); }
+		@media (max-width: 760px) { .shell { width: min(100% - 32px, 560px); } .hero { grid-template-columns: 1fr; gap: 30px; padding: 55px 0 72px; } .orbit { min-height: 330px; } .lamp-card { inset: 32px 19px 30px 29px; } .section-head { display: block; } .section-intro { margin-top: 18px; } .features, .roadmap { grid-template-columns: 1fr; } .features { gap: 10px; } h2.section-title { font-size: 36px; } footer { display: block; } footer span { display: block; margin-top: 8px; } }
+	</style>
+	<svg width="0" height="0" aria-hidden="true"><defs><filter id="liquid-goo"><feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur"/><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo"/><feBlend in="SourceGraphic" in2="goo"/></filter></defs></svg>
+	<script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+	<div class="page">
+		<div class="shell">
+			<nav>
+				<a class="brand" href="/"><span class="brand-mark">✦</span> Tutor Lamp</a>
+				<a class="nav-link" href="/app">Open workspace ↗</a>
+			</nav>
+
+			<main>
+				<section class="hero">
+					<div>
+						<span class="eyebrow">A calmer way to study</span>
+						<h1>Make focus feel a little more natural.</h1>
+						<p class="hero-copy">Tutor Lamp brings an attentive AI tutor, live focus cues, and a simple study rhythm into one quiet workspace.</p>
+						<div class="actions"><a class="primary" href="/app">Enter the workspace <span class="arrow">↗</span></a><span class="hero-note">Built for curious minds.</span></div>
+					</div>
+					<div class="orbit" aria-label="Tutor Lamp focus monitor preview">
+						<div class="lamp-card"><div><span class="mini-label">Live study signal</span><h2>Stay with<br>the thread.</h2></div><div class="signal"><span class="signal-dot"></span> Focus tracking is ready</div></div>
+					</div>
+				</section>
+
+				<section class="section">
+					<div class="section-head"><h2 class="section-title">Everything you need to keep learning.</h2><p class="section-intro">A small toolkit for turning “I’m stuck” into a next step that makes sense.</p></div>
+					<div class="features">
+						<article class="feature"><span class="feature-number">01 / TUTOR</span><div><h3>Ask without breaking flow.</h3><p>Get concise explanations from an AI tutor through text, voice, or an uploaded note.</p></div></article>
+						<article class="feature"><span class="feature-number">02 / FOCUS</span><div><h3>Notice when attention drifts.</h3><p>Camera-based focus cues gently surface distraction so you can return to the work.</p></div></article>
+						<article class="feature"><span class="feature-number">03 / RHYTHM</span><div><h3>Work in a healthy rhythm.</h3><p>Use the built-in Pomodoro timer to make deep work and real breaks easier to start.</p></div></article>
+					</div>
+				</section>
+
+				<section class="section">
+					<div class="section-head"><h2 class="section-title">On the horizon.</h2><p class="section-intro">The next layer of support is already taking shape.</p></div>
+					<div class="roadmap">
+						<article class="roadmap-item"><span class="status">Coming soon</span><div><h3>Personal study paths</h3><p>Turn a goal into a flexible sequence of focused sessions and small wins.</p></div></article>
+						<article class="roadmap-item"><span class="status">Exploring</span><div><h3>Progress reflections</h3><p>See patterns across your sessions and understand what helps you focus best.</p></div></article>
+						<article class="roadmap-item"><span class="status">Exploring</span><div><h3>Shared study rooms</h3><p>Work alongside friends with gentle accountability and shared session goals.</p></div></article>
+						<article class="roadmap-item"><span class="status">Coming soon</span><div><h3>More ways to learn</h3><p>Practice quizzes, flashcards, and richer document conversations in one place.</p></div></article>
+					</div>
+				</section>
+			</main>
+			<footer><span>© Tutor Lamp</span><span>Make room for better questions.</span></footer>
+		</div>
+	</div>
+</body>
+</html>
