@@ -716,7 +716,10 @@ def extract_file_content(file_path):
 def landing():
     return render_template('landing.html')
 
-@app.route('/app')
+@app.route('/app', strict_slashes=False)
+@app.route('/app/', strict_slashes=False)
+@app.route('/workspace', strict_slashes=False)
+@app.route('/workspace/', strict_slashes=False)
 def index():
     return render_template('index.html')
 
