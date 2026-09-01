@@ -21,10 +21,7 @@ app = Flask(__name__)
 
 # Initialize Groq client and MarkItDown engine
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
-if not GROQ_KEY:
-    raise RuntimeError("GROQ_API_KEY is missing. Add it to your .env file.")
-
-client = Groq(api_key=GROQ_KEY)
+client = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 md_converter = MarkItDown()
 
 UPLOAD_FOLDER = 'uploads'
@@ -527,6 +524,9 @@ def ask_groq(query, system_prompt=None):
     if not query or not str(query).strip():
         return "I did not catch that. Please say it again."
 
+    if client is None:
+        return "The AI assistant is not configured yet. Add a valid GROQ_API_KEY in the environment or .env file."
+
     messages = [{
         "role": "system",
         "content": system_prompt or "You are Tutor Lamp, a helpful AI tutor. Keep responses concise, clear, and useful."
@@ -751,6 +751,9 @@ def ask():
         messages = [
             {"role": "system", "content": "You are Tutor Lamp, a helpful AI tutor. Keep responses helpful and concise (1-3 sentences)."}
         ]
+
+        if client is None:
+            return jsonify({'response': 'The AI assistant is not configured yet. Add GROQ_API_KEY to the environment or .env file.'}), 503
 
         # Handle Image Attachments via Groq Vision API
         if uploaded_file and uploaded_file.content_type.startswith('image/'):
