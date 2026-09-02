@@ -91,6 +91,7 @@
         let isSpeaking = false;
         let isProcessing = false;
         let voiceActive = false;
+        let answerSpeechEnabled = false;
 
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -177,7 +178,7 @@
                 const response = await fetch('/ask', { method: 'POST', body: formData });
                 const data = await response.json();
                 appendMessage('Tutor Lamp', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
-                speakText(data.response);
+                speakText(data.response, false);
             } catch (error) {
                 appendMessage('Tutor Lamp', 'Error connecting to Tutor Lamp.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
             }
@@ -203,6 +204,7 @@
             }
 
             voiceActive = true;
+            answerSpeechEnabled = true;
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             recognition = new SpeechRecognition();
             recognition.continuous = false;
@@ -232,7 +234,7 @@
                 if (!query) {
                     const greeting = "I'm listening, go ahead!";
                     appendMessage('Tutor Lamp', greeting, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
-                    speakText(greeting);
+                    speakText(greeting, answerSpeechEnabled && voiceActive);
                     isProcessing = false;
                     return;
                 }
@@ -254,6 +256,7 @@
 
         function stopVoiceSystem(message) {
             voiceActive = false;
+            answerSpeechEnabled = false;
             isProcessing = false;
             isSpeaking = false;
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
@@ -282,28 +285,33 @@
                 const response = await fetch('/ask', { method: 'POST', body: formData });
                 const data = await response.json();
                 appendMessage('Tutor Lamp', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
-                speakText(data.response);
+                speakText(data.response, answerSpeechEnabled && voiceActive);
             } catch (error) {
                 appendMessage('Tutor Lamp', 'Error connecting to AI.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
                 if (voiceActive) restartRecognition();
             }
         }
 
-        function speakText(text) {
-            if ('speechSynthesis' in window && voiceActive) {
-                isSpeaking = true;
-                if (recognition) {
-                    try { recognition.stop(); } catch (error) {}
-                }
-                const utterance = new SpeechSynthesisUtterance(text);
-                const finishSpeech = () => {
-                    isSpeaking = false;
-                    if (voiceActive) restartRecognition();
-                };
-                utterance.onend = finishSpeech;
-                utterance.onerror = finishSpeech;
-                window.speechSynthesis.speak(utterance);
-            } else if (voiceActive) restartRecognition();
+        function speakText(text, shouldSpeak = false) {
+            if (!shouldSpeak || !('speechSynthesis' in window) || !text || !text.trim()) {
+                if (voiceActive) restartRecognition();
+                return;
+            }
+
+            isSpeaking = true;
+            if (recognition && voiceActive) {
+                try { recognition.stop(); } catch (error) {}
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            const finishSpeech = () => {
+                isSpeaking = false;
+                if (voiceActive) restartRecognition();
+            };
+            utterance.onend = finishSpeech;
+            utterance.onerror = finishSpeech;
+            window.speechSynthesis.cancel();
+            window.speechSynthesis.speak(utterance);
         }
     </script>
     <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
