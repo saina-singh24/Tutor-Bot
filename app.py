@@ -11,8 +11,9 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, redirect, session, url_for
-from authlib.integrations.flask_client import OAuth
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for, g
+from supabase import create_client, Client
+from gotrue.storage import SyncSupportedStorage
 from groq import Groq
 from markitdown import MarkItDown
 
@@ -21,17 +22,32 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tutor-lamp-development-key')
 
-oauth = OAuth(app)
-google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
-google_client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
-if google_client_id and google_client_secret:
-    oauth.register(
-        name='google',
-        client_id=google_client_id,
-        client_secret=google_client_secret,
-        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
-        client_kwargs={'scope': 'openid email profile'}
-    )
+# Supabase Setup
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+
+class FlaskSessionStorage(SyncSupportedStorage):
+    """Custom storage adapter to sync Supabase auth tokens with Flask session."""
+    def get_item(self, key: str) -> str | None:
+        return session.get(key)
+
+    def set_item(self, key: str, value: str) -> None:
+        session[key] = value
+
+    def remove_item(self, key: str) -> None:
+        session.pop(key, None)
+
+def get_supabase() -> Client:
+    if "supabase" not in g:
+        if SUPABASE_URL and SUPABASE_KEY:
+            g.supabase = create_client(
+                SUPABASE_URL,
+                SUPABASE_KEY,
+                options=dict(storage=FlaskSessionStorage(), flow_type="pkce")
+            )
+        else:
+            g.supabase = None
+    return g.supabase
 
 # Initialize Groq client and MarkItDown engine
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
@@ -182,7 +198,6 @@ def get_timezone_for_location(location_name):
         "frankfurt": "Europe/Berlin",
         "toronto": "America/Toronto",
         "los angeles": "America/Los_Angeles",
-        "dubai": "Asia/Dubai",
         "bangalore": "Asia/Kolkata",
         "india": "Asia/Kolkata",
         "united states": "America/New_York",
@@ -312,7 +327,6 @@ def extract_math_expression(query):
     q = q.replace(" minus ", " - ")
     q = q.replace(" times ", " * ")
     q = q.replace(" multiplied by ", " * ")
-    q = q.replace(" divided by ", " / ")
     q = q.replace(" divided by ", " / ")
     q = q.replace(" percent ", " % ")
     q = q.replace(" to the power of ", " ** ")
@@ -497,8 +511,8 @@ def search_web(query):
     safe_query = quote_plus(str(query).strip())
     url = f"https://api.duckduckgo.com/?q={safe_query}&format=json&no_redirect=1&no_html=1&skip_disambig=1"
     try:
-        request = Request(url, headers={"User-Agent": "TutorLamp/1.0"})
-        with urlopen(request, timeout=10) as response:
+        request_obj = Request(url, headers={"User-Agent": "TutorLamp/1.0"})
+        with urlopen(request_obj, timeout=10) as response:
             payload = json.loads(response.read().decode('utf-8', errors='replace'))
     except Exception:
         return None
@@ -730,30 +744,76 @@ def extract_file_content(file_path):
 def landing():
     return render_template('landing.html')
 
-@app.route('/login')
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    return render_template('login.html', google_enabled=bool(google_client_id and google_client_secret))
+    supabase = get_supabase()
+    configured = supabase is not None
+
+    if request.method == 'POST':
+        if not configured:
+            return render_template('login.html', google_enabled=False, error="Supabase configuration missing.")
+
+        action = request.form.get('action')
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        try:
+            if action == 'signup':
+                res = supabase.auth.sign_up({"email": email, "password": password})
+                if res.user:
+                    session['user'] = {'email': res.user.email, 'id': res.user.id}
+                    return redirect(url_for('index'))
+            elif action == 'login':
+                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                if res.user:
+                    session['user'] = {'email': res.user.email, 'id': res.user.id}
+                    return redirect(url_for('index'))
+        except Exception as err:
+            return render_template('login.html', google_enabled=configured, error=str(err))
+
+    return render_template('login.html', google_enabled=configured)
 
 @app.route('/login/google')
 def google_login():
-    if not google_client_id or not google_client_secret:
-        return render_template('login.html', google_enabled=False, error='Google sign-in is not configured yet.'), 503
-    redirect_uri = os.environ.get('GOOGLE_REDIRECT_URI') or url_for('google_callback', _external=True)
-    return oauth.google.authorize_redirect(redirect_uri)
-
-@app.route('/auth/google/callback')
-def google_callback():
-    if not google_client_id or not google_client_secret:
-        return redirect(url_for('login'))
-    token = oauth.google.authorize_access_token()
-    user_info = token.get('userinfo')
-    if user_info:
-        session['user'] = {
-            'name': user_info.get('name', 'Google user'),
-            'email': user_info.get('email', ''),
-            'picture': user_info.get('picture', '')
+    supabase = get_supabase()
+    if not supabase:
+        return render_template('login.html', google_enabled=False, error='Supabase client is not configured.'), 503
+    
+    redirect_uri = f"{request.host_url.rstrip('/')}/auth/callback"
+    res = supabase.auth.sign_in_with_oauth({
+        "provider": "google",
+        "options": {
+            "redirect_to": redirect_uri
         }
+    })
+    return redirect(res.url)
+
+@app.route('/auth/callback')
+def google_callback():
+    supabase = get_supabase()
+    code = request.args.get('code')
+    if code and supabase:
+        try:
+            res = supabase.auth.exchange_code_for_session({"auth_code": code})
+            if res.user:
+                session['user'] = {
+                    'email': res.user.email,
+                    'id': res.user.id
+                }
+        except Exception as e:
+            return redirect(url_for('login'))
     return redirect(url_for('index'))
+
+@app.route('/logout')
+def logout():
+    supabase = get_supabase()
+    if supabase:
+        try:
+            supabase.auth.sign_out()
+        except Exception:
+            pass
+    session.clear()
+    return redirect(url_for('landing'))
 
 @app.route('/app', strict_slashes=False)
 @app.route('/app/', strict_slashes=False)
@@ -781,7 +841,6 @@ def ask():
     if user_query and not uploaded_file:
         routed_answer = process_voice_query(user_query)
         if routed_answer and routed_answer != "I did not catch that. Please say the question again.":
-            # Preserve the previous tutoring experience for file-less prompts unless the query is clearly a general AI task.
             if detect_intent(normalize_query(user_query)) not in {"reasoning", "general"}:
                 return jsonify({'response': routed_answer})
 
@@ -793,7 +852,6 @@ def ask():
         if client is None:
             return jsonify({'response': 'The AI assistant is not configured yet. Add GROQ_API_KEY to the environment or .env file.'}), 503
 
-        # Handle Image Attachments via Groq Vision API
         if uploaded_file and uploaded_file.content_type.startswith('image/'):
             image_bytes = uploaded_file.read()
             base64_image = base64.b64encode(image_bytes).decode('utf-8')
@@ -818,14 +876,12 @@ def ask():
                 max_tokens=250
             )
 
-        # Handle All Other File Formats (PDF, DOCX, PPTX, XLSX, TXT, CSV, etc.)
         else:
             file_text_content = ""
             if uploaded_file and uploaded_file.filename:
                 filepath = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
                 uploaded_file.save(filepath)
 
-                # Extract structured text regardless of original format
                 file_text_content = extract_file_content(filepath)
 
             prompt_content = user_query
