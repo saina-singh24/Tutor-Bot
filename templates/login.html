@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sign in | Tutor Bot</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+	<style>
+		:root { --ink: #18251f; --muted: #64736b; --paper: #f4f0e8; --cream: #fffdf8; --lime: var(--user-accent); --coral: #fff; }
+		* { box-sizing: border-box; }
+		body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--paper); font-family: 'DM Sans', sans-serif; overflow: hidden; }
+		body::before, body::after { content: ''; position: fixed; z-index: 0; width: 260px; height: 190px; border-radius: 50%; pointer-events: none; filter: url(#liquid-goo); opacity: .22; animation: liquid-drift 18s ease-in-out infinite alternate; }
+		body::before { top: 8%; right: 8%; background: var(--user-accent); }
+		body::after { left: -90px; bottom: 12%; background: var(--coral); animation-delay: -7s; }
+		@keyframes liquid-drift { from { transform: translate3d(0, 0, 0) scale(1); border-radius: 45% 55% 62% 38%; } to { transform: translate3d(34px, -20px, 0) scale(1.18); border-radius: 64% 36% 44% 56%; } }
+		.page { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 86% 8%, var(--user-accent-glow), transparent 23rem), var(--paper); }
+		.shell { width: min(100% - 48px, 440px); }
+		.brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font: 700 18px 'Space Grotesk', sans-serif; letter-spacing: -.03em; }
+		.brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: var(--ink); color: var(--lime); }
+		.panel { position: relative; margin-top: 28px; padding: 36px; background: #fff; border: 1px solid rgba(24,37,31,.2); border-radius: 5px; box-shadow: 12px 13px 0 var(--coral), 0 24px 50px rgba(24,37,31,.16); }
+		h1 { margin: 0; font: 700 42px/.98 'Space Grotesk', sans-serif; letter-spacing: -.055em; }
+		.intro { margin: 12px 0 28px; color: var(--muted); line-height: 1.5; }
+		.google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 15px 19px; color: var(--user-accent-text); background: var(--user-accent); border: 1px solid var(--ink); border-radius: 4px; text-decoration: none; font-weight: 700; box-shadow: 5px 5px 0 var(--ink); transition: transform .2s, box-shadow .2s; }
+		.google:hover { transform: translate(3px, 3px); box-shadow: 2px 2px 0 var(--ink); }
+		.google-mark { font-size: 18px; font-weight: 700; }
+		.divider { display: flex; align-items: center; gap: 12px; margin: 24px 0; color: var(--muted); font-size: 12px; }
+		.divider::before, .divider::after { content: ''; height: 1px; flex: 1; background: rgba(24,37,31,.14); }
+		.continue { display: block; text-align: center; color: var(--muted); font-size: 14px; font-weight: 700; text-decoration: none; }
+		.continue:hover { color: var(--ink); }
+		.error { margin: 0 0 18px; padding: 10px 12px; color: #8b2f20; background: #ffe5df; border: 1px solid #f2b5a6; border-radius: 4px; font-size: 13px; }
+		.config-note { margin-top: 18px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+		@media (max-width: 520px) { .shell { width: min(100% - 32px, 440px); } .panel { padding: 28px 22px; } h1 { font-size: 36px; } }
+	</style>
+</head>
+	<script src="{{ url_for('static', filename='theme.js') }}"></script>
+<body>
+	<svg width="0" height="0" aria-hidden="true"><defs><filter id="liquid-goo"><feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur"/><feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9" result="goo"/><feBlend in="SourceGraphic" in2="goo"/></filter></defs></svg>
+	<div class="page">
+	<main class="shell">
+		<a class="brand" href="/"><span class="brand-mark">✦</span> Tutor Bot</a>
+		<section class="panel">
+			<h1>Welcome back.</h1>
+			<p class="intro">Sign in to return to your focused study workspace.</p>
+			{% if error %}<p class="error">{{ error }}</p>{% endif %}
+			{% if google_enabled %}
+			<a class="google" href="/login/google"><span class="google-mark">G</span> Continue with Google</a>
+			{% else %}
+			<a class="google" href="/app"><span class="google-mark">→</span> Continue to workspace</a>
+			<p class="config-note">Google sign-in will appear here once OAuth credentials are added to the app configuration.</p>
+			{% endif %}
+			<div class="divider">or</div>
+			<a class="continue" href="/">Back to landing page</a>
+		</section>
+	</main>
+</div>
+</body>
+</html>

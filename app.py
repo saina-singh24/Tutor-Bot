@@ -11,13 +11,27 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for
+from authlib.integrations.flask_client import OAuth
 from groq import Groq
 from markitdown import MarkItDown
 
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tutor-lamp-development-key')
+
+oauth = OAuth(app)
+google_client_id = os.environ.get('GOOGLE_CLIENT_ID')
+google_client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+if google_client_id and google_client_secret:
+    oauth.register(
+        name='google',
+        client_id=google_client_id,
+        client_secret=google_client_secret,
+        server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+        client_kwargs={'scope': 'openid email profile'}
+    )
 
 # Initialize Groq client and MarkItDown engine
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
@@ -715,6 +729,31 @@ def extract_file_content(file_path):
 @app.route('/')
 def landing():
     return render_template('landing.html')
+
+@app.route('/login')
+def login():
+    return render_template('login.html', google_enabled=bool(google_client_id and google_client_secret))
+
+@app.route('/login/google')
+def google_login():
+    if not google_client_id or not google_client_secret:
+        return render_template('login.html', google_enabled=False, error='Google sign-in is not configured yet.'), 503
+    redirect_uri = os.environ.get('GOOGLE_REDIRECT_URI') or url_for('google_callback', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+@app.route('/auth/google/callback')
+def google_callback():
+    if not google_client_id or not google_client_secret:
+        return redirect(url_for('login'))
+    token = oauth.google.authorize_access_token()
+    user_info = token.get('userinfo')
+    if user_info:
+        session['user'] = {
+            'name': user_info.get('name', 'Google user'),
+            'email': user_info.get('email', ''),
+            'picture': user_info.get('picture', '')
+        }
+    return redirect(url_for('index'))
 
 @app.route('/app', strict_slashes=False)
 @app.route('/app/', strict_slashes=False)
