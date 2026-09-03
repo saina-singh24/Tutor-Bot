@@ -735,7 +735,10 @@ def login():
 
     if request.method == 'POST':
         if not configured:
-            return render_template('login.html', google_enabled=False, error="Supabase configuration missing.")
+            return render_template('login.html', 
+                                   supabase_url=SUPABASE_URL or '', 
+                                   supabase_key=SUPABASE_KEY or '', 
+                                   error="Supabase configuration missing.")
 
         action = request.form.get('action')
         email = request.form.get('email')
@@ -753,15 +756,33 @@ def login():
                     session['user'] = {'email': res.user.email, 'id': res.user.id}
                     return redirect(url_for('index'))
         except Exception as err:
-            return render_template('login.html', google_enabled=configured, error=str(err))
+            return render_template('login.html', 
+                                   supabase_url=SUPABASE_URL or '', 
+                                   supabase_key=SUPABASE_KEY or '', 
+                                   error=str(err))
 
-    return render_template('login.html', google_enabled=configured)
+    return render_template('login.html', 
+                           supabase_url=SUPABASE_URL or '', 
+                           supabase_key=SUPABASE_KEY or '')
+
+@app.route('/auth/set_session', methods=['POST'])
+def set_session():
+    data = request.get_json() or {}
+    email = data.get('email')
+    user_id = data.get('id')
+    if email and user_id:
+        session['user'] = {'email': email, 'id': user_id}
+        return jsonify({'status': 'success'}), 200
+    return jsonify({'status': 'invalid data'}), 400
 
 @app.route('/login/google')
 def google_login():
     supabase = get_supabase()
     if not supabase:
-        return render_template('login.html', google_enabled=False, error='Supabase client is not configured.'), 503
+        return render_template('login.html', 
+                               supabase_url=SUPABASE_URL or '', 
+                               supabase_key=SUPABASE_KEY or '', 
+                               error='Supabase client is not configured.'), 503
     
     redirect_uri = f"{request.host_url.rstrip('/')}/auth/callback"
     res = supabase.auth.sign_in_with_oauth({

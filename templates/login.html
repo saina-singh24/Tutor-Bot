@@ -38,6 +38,8 @@
 		@media (max-width: 520px) { .shell { width: min(100% - 32px, 440px); } .panel { padding: 28px 22px; } h1 { font-size: 30px; } }
 	</style>
 	<script src="{{ url_for('static', filename='theme.js') }}"></script>
+	<!-- Supabase JS Client -->
+	<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 	<div class="page">
@@ -48,10 +50,8 @@
 				<p class="intro">Sign in to return to your focused study workspace.</p>
 				{% if error %}<p class="error">{{ error }}</p>{% endif %}
 
-				{% if google_enabled %}
-				<a class="google" href="/login/google"><span class="google-mark">G</span> Continue with Google</a>
+				<button type="button" class="google" onclick="loginWithGoogle()"><span class="google-mark">G</span> Continue with Google</button>
 				<div class="divider">or use email</div>
-				{% endif %}
 
 				<form method="POST" action="/login">
 					<div class="input-group">
@@ -72,5 +72,43 @@
 			</section>
 		</main>
 	</div>
+
+	<script>
+		const supabaseUrl = "{{ supabase_url }}";
+		const supabaseKey = "{{ supabase_key }}";
+		const sb = supabase.createClient(supabaseUrl, supabaseKey);
+
+		// Handle Google Sign-In button click
+		async function loginWithGoogle() {
+			const { error } = await sb.auth.signInWithOAuth({
+				provider: 'google',
+				options: {
+					redirectTo: window.location.origin + '/login'
+				}
+			});
+			if (error) alert(error.message);
+		}
+
+		// Check if user has returned with an active OAuth session (from URL hash fragment)
+		async function checkAuth() {
+			const { data: { session } } = await sb.auth.getSession();
+			if (session && session.user) {
+				// Send session credentials to Flask backend
+				const response = await fetch('/auth/set_session', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						email: session.user.email,
+						id: session.user.id
+					})
+				});
+				if (response.ok) {
+					window.location.href = '/app';
+				}
+			}
+		}
+
+		checkAuth();
+	</script>
 </body>
 </html>
