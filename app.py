@@ -13,7 +13,6 @@ from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, redirect, session, url_for, g
 from supabase import create_client, Client
-from gotrue.storage import SyncSupportedStorage
 from groq import Groq
 from markitdown import MarkItDown
 
@@ -22,29 +21,14 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tutor-lamp-development-key')
 
-# Supabase Setup
+# Supabase Configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-
-class FlaskSessionStorage(SyncSupportedStorage):
-    """Custom storage adapter to sync Supabase auth tokens with Flask session."""
-    def get_item(self, key: str) -> str | None:
-        return session.get(key)
-
-    def set_item(self, key: str, value: str) -> None:
-        session[key] = value
-
-    def remove_item(self, key: str) -> None:
-        session.pop(key, None)
 
 def get_supabase() -> Client:
     if "supabase" not in g:
         if SUPABASE_URL and SUPABASE_KEY:
-            g.supabase = create_client(
-                SUPABASE_URL,
-                SUPABASE_KEY,
-                options=dict(storage=FlaskSessionStorage(), flow_type="pkce")
-            )
+            g.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
         else:
             g.supabase = None
     return g.supabase
@@ -736,7 +720,7 @@ def extract_file_content(file_path):
         if not extracted_text:
             return "[Note: File uploaded successfully, but no readable text content could be extracted.]"
 
-        return extracted_text[:4000]  # Cap prompt token length
+        return extracted_text[:4000]
     except Exception as e:
         return f"[Error processing file '{os.path.basename(file_path)}': {str(e)}]"
 
@@ -800,7 +784,7 @@ def google_callback():
                     'email': res.user.email,
                     'id': res.user.id
                 }
-        except Exception as e:
+        except Exception:
             return redirect(url_for('login'))
     return redirect(url_for('index'))
 
