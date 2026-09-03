@@ -727,10 +727,6 @@ def index():
 def chatbot():
     return render_template('chatbot.html')
 
-@app.route('/music')
-def music():
-    return render_template('music.html')
-
 @app.route('/analytics')
 def analytics():
     return render_template('analytics.html')

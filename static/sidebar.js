@@ -30,10 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m5-4a8 8 0 11-16 0c0 1.2.27 2.34.76 3.36L4 20l4.64-.76A8 8 0 0020 12z"></path></svg>
                         <span>Chatbot</span>
                     </a>
-                    <a href="/music" class="flex items-center space-x-3 px-4 py-3 rounded-xl transition ${currentPath === '/music' ? 'bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 font-semibold' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200'}">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                        <span>Music</span>
-                    </a>
                 </nav>
             </div>
 
