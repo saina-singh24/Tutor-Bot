@@ -41,9 +41,12 @@
                 <span class="text-xs font-semibold text-indigo-400 uppercase tracking-wider">Your study companion</span>
                 <h2 class="text-3xl font-bold text-gray-100 mt-2">What are you working through?</h2>
                 <p class="text-sm text-gray-400 mt-2">Ask a question or attach notes and homework for a concise explanation.</p>
-                <button id="startVoiceBtn" onclick="initVoiceSystem()" class="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold transition pulse-glow">
-                    <span id="voiceStatusText">🎤 Start Voice Assistant</span>
-                </button>
+                <div class="flex gap-3 mt-4">
+                    <button id="startVoiceBtn" onclick="toggleVoiceSystem()" class="flex-1 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold transition pulse-glow">
+                        <span id="voiceStatusText">🎤 Start Voice Assistant</span>
+                    </button>
+                    <button id="voiceMuteBtn" onclick="toggleMute()" class="px-4 py-3 rounded-xl glass hover:bg-gray-800 text-gray-300 border border-gray-700 font-bold transition" aria-pressed="false">Mute</button>
+                </div>
                 <button id="quizBtn" onclick="startQuiz()" class="w-full mt-3 py-3 rounded-xl glass hover:bg-gray-800 text-indigo-300 border border-indigo-500/30 font-bold transition">Quiz Me On This</button>
             </div>
 
@@ -97,6 +100,7 @@
         let isProcessing = false;
         let voiceActive = false;
         let answerSpeechEnabled = false;
+        let voiceMuted = false;
         let reviewedConversation = JSON.parse(localStorage.getItem('tutor-lamp-conversation') || '[]');
         let quizActive = false;
         let activeQuizQuestion = '';
@@ -124,6 +128,7 @@
                 quizActive = Boolean(activeQuizQuestion);
                 appendMessage('Tutor Bot', activeQuizQuestion, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
                 rememberConversation('assistant', activeQuizQuestion);
+                speakText(activeQuizQuestion, answerSpeechEnabled && voiceActive);
             } catch (error) {
                 appendMessage('Tutor Bot', 'I could not create a quiz right now.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
             } finally {
@@ -234,7 +239,15 @@
 
         function toggleVoiceSystem() {
             if (voiceActive) stopVoiceSystem('Voice assistant stopped.');
-            else initVoiceSystem();
+            else if (!voiceMuted) initVoiceSystem();
+        }
+
+        function toggleMute() {
+            voiceMuted = !voiceMuted;
+            const button = document.getElementById('voiceMuteBtn');
+            button.innerText = voiceMuted ? 'Unmute' : 'Mute';
+            button.setAttribute('aria-pressed', String(voiceMuted));
+            if (voiceMuted) stopVoiceSystem('Voice assistant muted.');
         }
 
         function initVoiceSystem() {
@@ -244,7 +257,7 @@
             }
 
             voiceActive = true;
-            answerSpeechEnabled = true;
+            answerSpeechEnabled = !voiceMuted;
             if ('speechSynthesis' in window) window.speechSynthesis.cancel();
             recognition = new SpeechRecognition();
             recognition.continuous = false;
@@ -263,6 +276,13 @@
                 if (rawTranscript.length < 2) return;
                 if (rawTranscript.includes('tutor bot stop') || rawTranscript === 'stop' || rawTranscript.includes('stop voice')) {
                     stopVoiceSystem('Voice assistant turned off.');
+                    return;
+                }
+
+                if (/\b(can you )?(quiz|test) me\b/.test(rawTranscript)) {
+                    isProcessing = true;
+                    await startQuiz();
+                    isProcessing = false;
                     return;
                 }
 
@@ -359,6 +379,11 @@
             }
 
             const utterance = new SpeechSynthesisUtterance(text);
+            const voices = window.speechSynthesis.getVoices();
+            utterance.voice = voices.find(voice => /Samantha|Ava|Karen|Google US English|Microsoft Jenny/i.test(voice.name)) || voices.find(voice => voice.lang === 'en-US') || voices[0];
+            utterance.rate = 0.92;
+            utterance.pitch = 1.04;
+            utterance.volume = 0.9;
             const finishSpeech = () => {
                 isSpeaking = false;
                 if (voiceActive) restartRecognition();

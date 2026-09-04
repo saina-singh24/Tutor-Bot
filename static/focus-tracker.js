@@ -62,6 +62,18 @@
         button.setAttribute('aria-pressed', String(active));
     }
 
+    function setInactiveStatus() {
+        const badge = document.getElementById('statusBadge');
+        if (badge) {
+            badge.innerText = 'Study session inactive';
+            badge.className = 'px-4 py-2 rounded-xl text-sm font-semibold glass text-gray-400 border border-gray-500/30 bg-gray-950/20';
+        }
+        const trackerStatus = document.getElementById('trackerStatus');
+        if (trackerStatus) trackerStatus.innerText = 'Study session inactive';
+        const angle = document.getElementById('poseAngleText');
+        if (angle) angle.innerText = 'Yaw: N/A | Pitch: N/A';
+    }
+
     async function resetServerSession(url) {
         try {
             await fetch(url, { method: 'POST', keepalive: true });
@@ -82,7 +94,7 @@
         localStorage.removeItem(activeKey);
         stopTracker();
         updateButton();
-        updateStatus('Study session stopped', false);
+        setInactiveStatus();
         await resetServerSession('/study_session/stop');
         window.dispatchEvent(new CustomEvent('tutorLampStudySessionChange', { detail: { active: false } }));
     }
@@ -207,7 +219,10 @@
         if (event.key !== activeKey) return;
         updateButton();
         if (event.newValue === 'true') startTracker();
-        else stopTracker();
+        else {
+            stopTracker();
+            setInactiveStatus();
+        }
     });
     window.addEventListener('beforeunload', event => {
         if (isActive() && !navigationStarted) {
@@ -221,6 +236,7 @@
         if (button) button.addEventListener('click', () => isActive() ? stopSession() : startSession());
         updateButton();
         if (isActive()) startTracker();
+        else setInactiveStatus();
     });
 
     window.tutorLampStudySession = { start: startSession, stop: stopSession, isActive };
