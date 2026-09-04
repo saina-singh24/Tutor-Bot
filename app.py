@@ -44,14 +44,25 @@ md_converter = MarkItDown()
 LIBRITTS_SPEAKER_ID = '2902'
 tts_engine = None
 tts_reference_path = None
+HAS_TTS = False
+
+# Try to detect optional TTS-related libraries at import time so deployments
+# that cannot build these heavy packages (like Render free tier) still succeed.
+try:
+    # These imports validate that the environment can support server-side TTS.
+    from datasets import load_dataset  # type: ignore
+    import soundfile as sf  # type: ignore
+    from TTS.api import TTS  # type: ignore
+    HAS_TTS = True
+except Exception:
+    HAS_TTS = False
 
 def get_libritts_reference():
     global tts_reference_path
     if tts_reference_path and os.path.exists(tts_reference_path):
         return tts_reference_path
-
-    from datasets import load_dataset
-    import soundfile as sf
+    if not HAS_TTS:
+        raise RuntimeError('LibriTTS reference unavailable because TTS dependencies are not installed.')
 
     dataset = load_dataset('mythicinfinity/libritts', 'all', streaming=True)
     for split in dataset.values():
@@ -70,6 +81,8 @@ def get_libritts_reference():
 def get_tts_engine():
     global tts_engine
     if tts_engine is None:
+        if not HAS_TTS:
+            raise RuntimeError('TTS engine unavailable because TTS dependencies are not installed.')
         from TTS.api import TTS
         tts_engine = TTS('tts_models/multilingual/multi-dataset/xtts_v2')
     return tts_engine
@@ -1002,6 +1015,8 @@ def speak():
     text = str(data.get('text', '')).strip()[:1200]
     if not text:
         return jsonify({'error': 'Text is required.'}), 400
+    if not HAS_TTS:
+        return jsonify({'error': 'Server-side TTS is not available on this deployment. Install optional TTS dependencies from requirements-tts.txt or use client-side speechSynthesis as a fallback.'}), 503
 
     try:
         reference = get_libritts_reference()
