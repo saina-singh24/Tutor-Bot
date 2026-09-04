@@ -4,10 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutor Lamp - Chatbot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     <style>
-        body { background: #090d16; color: #f3f4f6; font-family: sans-serif; }
+        body { background: #090d16; color: #f3f4f6; font-family: 'DM Sans', sans-serif; }
         .glass { background: rgba(17, 24, 39, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
         .pulse-glow { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
         #chatLog::-webkit-scrollbar { width: 6px; }
@@ -24,18 +27,18 @@
 </head>
 <body class="min-h-screen p-3 sm:p-6">
     <div class="max-w-4xl mx-auto min-h-[calc(100vh-3rem)] flex flex-col">
-        <header class="flex justify-between items-center mb-6 flex-shrink-0">
+        <header class="flex flex-wrap gap-3 justify-between items-center mb-6 flex-shrink-0">
             <div class="flex items-center space-x-3">
                 <button id="openSidebar" class="p-2 rounded-xl glass hover:bg-gray-800 text-gray-300 transition focus:outline-none" aria-label="Open navigation menu">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                 </button>
                 <div class="w-4 h-4 rounded-full bg-indigo-500 animate-ping"></div>
                 <div>
-                    <h1 class="text-2xl font-bold tracking-wider text-indigo-400">TUTOR BOT</h1>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-indigo-400">TUTOR BOT</h1>
                     <p class="text-xs text-gray-400">Chatbot workspace</p>
                 </div>
             </div>
-            <a href="/app" class="px-4 py-2 glass rounded-xl text-sm font-semibold hover:bg-gray-800 text-gray-300">← Dashboard</a>
+            <a href="/app" class="px-3 py-2 glass rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-800 text-gray-300">← Dashboard</a>
         </header>
 
         <main class="glass rounded-2xl p-4 sm:p-6 flex flex-col flex-1 min-h-0">

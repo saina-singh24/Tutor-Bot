@@ -2,11 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutor Lamp AI Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-        body { background: #090d16; color: #f3f4f6; font-family: sans-serif; }
+        body { background: #090d16; color: #f3f4f6; font-family: 'DM Sans', sans-serif; }
         .glass { background: rgba(17, 24, 39, 0.58); backdrop-filter: blur(14px) saturate(130%); border: 1px solid rgba(255, 255, 255, 0.18); box-shadow: inset 0 1px rgba(255,255,255,.1), 0 16px 40px rgba(0,0,0,.16); }
         .pulse-glow { box-shadow: 0 0 24px rgba(99, 102, 241, 0.4), inset 0 1px rgba(255,255,255,.2); }
         button, input, .glass { border-radius: 14px; }
@@ -21,17 +25,17 @@
 </head>
 <body class="h-screen w-screen flex flex-col p-3 sm:p-6 overflow-hidden">
     <!-- Header -->
-    <header class="flex justify-between items-center mb-4 flex-shrink-0">
+    <header class="flex flex-wrap gap-3 justify-between items-center mb-4 flex-shrink-0">
         <div class="flex items-center space-x-3">
             <button id="openSidebar" class="p-2 rounded-xl glass hover:bg-gray-800 text-gray-300 transition focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
             </button>
             <div class="w-4 h-4 rounded-full bg-indigo-500 animate-ping"></div>
-            <h1 class="text-2xl font-bold tracking-wider text-indigo-400">TUTOR BOT <span class="text-xs px-2 py-1 bg-indigo-900 text-indigo-200 rounded-full">Dashboard</span></h1>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-indigo-400">TUTOR BOT <span class="text-xs px-2 py-1 bg-indigo-900 text-indigo-200 rounded-full">Dashboard</span></h1>
         </div>
         <div class="flex items-center space-x-4">
-            <a href="/" class="px-4 py-2 glass rounded-xl text-sm font-semibold hover:bg-gray-800 text-gray-300 border border-gray-700">← Landing</a>
-            <a href="/logout" class="px-4 py-2 glass rounded-xl text-sm font-semibold hover:bg-red-900/40 text-red-300 border border-red-700/50">Logout</a>
+            <a href="/" class="px-3 py-2 glass rounded-xl text-xs sm:text-sm font-semibold hover:bg-gray-800 text-gray-300 border border-gray-700">← Landing</a>
+            <a href="/logout" class="px-3 py-2 glass rounded-xl text-xs sm:text-sm font-semibold hover:bg-red-900/40 text-red-300 border border-red-700/50">Logout</a>
         </div>
     </header>
 

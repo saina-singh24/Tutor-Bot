@@ -8,26 +8,26 @@
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 	<style>
-		:root { --ink: #18251f; --muted: #64736b; --paper: #f4f0e8; --cream: #fffdf8; --lime: var(--user-accent); --coral: #fff; }
+		:root { --ink: #f5f3ff; --muted: #a8a4b8; --paper: #08080b; --cream: #13131a; --lime: var(--user-accent); --coral: #fff; }
 		* { box-sizing: border-box; }
 		body { margin: 0; min-height: 100vh; color: var(--ink); background: var(--paper); font-family: 'DM Sans', sans-serif; }
-		.page { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; padding: 24px 0; background: radial-gradient(circle at 86% 8%, var(--user-accent-glow), transparent 23rem), var(--paper); }
+		.page { position: relative; z-index: 1; min-height: 100vh; display: grid; place-items: center; padding: 24px 0; background: radial-gradient(circle at 86% 8%, var(--user-accent-glow), transparent 23rem), linear-gradient(135deg, #08080b, #14131c 55%, #08080b); }
 		.shell { width: min(100% - 48px, 440px); }
 		.brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font: 700 18px 'Space Grotesk', sans-serif; letter-spacing: -.03em; }
-		.brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: var(--ink); color: var(--lime); }
-		.panel { position: relative; margin-top: 28px; padding: 36px; background: #fff; color: #18251f; border: 1px solid rgba(24,37,31,.2); border-radius: 5px; box-shadow: 12px 13px 0 var(--coral), 0 24px 50px rgba(24,37,31,.16); }
+		.brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: var(--lime); color: #0b0912; box-shadow: 0 0 24px var(--user-accent-soft); }
+		.panel { position: relative; margin-top: 28px; padding: 36px; background: rgba(255,255,255,.07); color: var(--ink); border: 1px solid rgba(255,255,255,.15); border-radius: 24px; box-shadow: inset 0 1px rgba(255,255,255,.1), 0 24px 50px rgba(0,0,0,.35); backdrop-filter: blur(20px); }
 		.panel::before { content: ''; position: absolute; top: -1px; left: 36px; width: 72px; height: 5px; background: var(--user-accent); border-radius: 0 0 4px 4px; }
-		h1 { margin: 0; color: #18251f; font: 700 36px/.98 'Space Grotesk', sans-serif; letter-spacing: -.055em; }
+		h1 { margin: 0; color: var(--ink); font: 700 36px/.98 'Space Grotesk', sans-serif; letter-spacing: -.055em; }
 		.intro { margin: 12px 0 24px; color: #64736b; line-height: 1.5; font-size: 14px; }
-		.google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 19px; color: var(--user-accent-text); background: var(--user-accent); border: 1px solid var(--ink); border-radius: 4px; text-decoration: none; font-weight: 700; box-shadow: 4px 4px 0 var(--ink); transition: transform .2s, box-shadow .2s; cursor: pointer; }
-		.google:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+		.google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 19px; color: #111016; background: #f5f3ff; border: 1px solid rgba(255,255,255,.7); border-radius: 999px; text-decoration: none; font-weight: 700; box-shadow: 0 10px 25px rgba(0,0,0,.2); transition: transform .2s, box-shadow .2s; cursor: pointer; }
+		.google:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0,0,0,.3); }
 		.google-mark { font-size: 18px; font-weight: 700; }
 		.divider { display: flex; align-items: center; gap: 12px; margin: 20px 0; color: #64736b; font-size: 12px; }
 		.divider::before, .divider::after { content: ''; height: 1px; flex: 1; background: rgba(24,37,31,.14); }
 		.input-group { margin-bottom: 14px; text-align: left; }
-		.input-group label { display: block; font-size: 12px; font-weight: 600; color: #18251f; margin-bottom: 4px; }
-		.input-group input { width: 100%; padding: 10px 12px; border: 1px solid rgba(24,37,31,.2); border-radius: 4px; font-size: 14px; outline: none; }
-		.input-group input:focus { border-color: var(--ink); }
+		.input-group label { display: block; font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+		.input-group input { width: 100%; padding: 12px; color: var(--ink); background: rgba(0,0,0,.22); border: 1px solid rgba(255,255,255,.15); border-radius: 12px; font-size: 14px; outline: none; }
+		.input-group input:focus { border-color: var(--user-accent); box-shadow: 0 0 0 3px var(--user-accent-soft); }
 		.btn-stack { display: flex; gap: 10px; margin-top: 18px; }
 		.btn-primary, .btn-secondary { flex: 1; padding: 11px; font-weight: 700; font-size: 13px; border-radius: 4px; cursor: pointer; border: 1px solid var(--ink); text-align: center; }
 		.btn-primary { background: var(--ink); color: #fff; }

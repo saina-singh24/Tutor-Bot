@@ -1,6 +1,6 @@
 (() => {
     const storageKeys = { theme: 'tutor-lamp-theme', accent: 'tutor-lamp-accent' };
-    const defaultAccent = '#c8f06b';
+    const defaultAccent = '#9b7cff';
     const root = document.documentElement;
 
     function hexToRgb(hex) {
@@ -75,11 +75,11 @@
             [data-theme="light"] body #chatLog .text-gray-200 { color: #26372e !important; }
             [data-theme="light"] body .bg-red-950\/30 { background: #ffe5df !important; }
             [data-theme="light"] body .bg-green-950\/20 { background: #e1f4e8 !important; }
-            [data-theme="dark"] body .page { --ink: #eaf2ed; --muted: #b4c2b8; --paper: #0d1611; --cream: #16221a; --line: rgba(234,242,237,.16); }
-            [data-theme="dark"] body .lamp-card, [data-theme="dark"] body .feature:nth-child(3) { background: #17231d; color: #f5faf6; }
-            [data-theme="dark"] body .roadmap-item { background: rgba(23,35,29,.76); }
-            [data-theme="dark"] body .primary { border-color: #eaf2ed; }
-            .theme-controls { position: fixed; z-index: 100; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 8px; padding: 8px; color: #eaf2ed; background: #17231d; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.2); font: 600 12px 'DM Sans', sans-serif; }
+            [data-theme="dark"] body .page { --ink: #f5f3ff; --muted: #a8a4b8; --paper: #08080b; --cream: #13131a; --line: rgba(245,243,255,.14); }
+            [data-theme="dark"] body .lamp-card, [data-theme="dark"] body .feature:nth-child(3) { background: #191722; color: #f5f3ff; }
+            [data-theme="dark"] body .roadmap-item { background: rgba(25,23,34,.76); }
+            [data-theme="dark"] body .primary { border-color: #f5f3ff; }
+            .theme-controls { position: fixed; z-index: 100; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 8px; padding: 8px; color: #f5f3ff; background: #191722; border: 1px solid rgba(255,255,255,.2); border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,.2); font: 600 12px 'DM Sans', sans-serif; }
             #themeSettingsSlot .theme-controls { position: static; right: auto; bottom: auto; display: block; padding: 0; color: inherit; background: transparent; border: 0; border-radius: 0; box-shadow: none; }
             #themeSettingsSlot #themeToggle { width: 100%; justify-content: space-between; padding: 10px 0; color: inherit; }
             #themeSettingsSlot .accent-setting { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(128,145,134,.25); }
@@ -120,7 +120,7 @@
     }
 
     addThemeStyles();
-    setTheme(localStorage.getItem(storageKeys.theme) || 'light');
+    setTheme(localStorage.getItem(storageKeys.theme) || 'dark');
     setAccent(localStorage.getItem(storageKeys.accent) || defaultAccent);
     document.addEventListener('DOMContentLoaded', addControls);
     window.addEventListener('tutorLampSidebarReady', moveControlsToSidebar);
