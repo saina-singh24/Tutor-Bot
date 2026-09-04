@@ -375,8 +375,8 @@
             log.scrollTop = log.scrollHeight;
         }
 
-        function speakText(text, shouldSpeak = false) {
-            if (!shouldSpeak || !('speechSynthesis' in window) || !text || !text.trim()) {
+        async function speakText(text, shouldSpeak = false) {
+            if (!shouldSpeak || !text || !text.trim()) {
                 if (voiceActive) restartRecognition();
                 return;
             }
@@ -387,17 +387,30 @@
                 try { recognition.stop(); } catch(e) {}
             }
 
-            const utterance = new SpeechSynthesisUtterance(text);
-            
             const finishSpeech = () => {
                 isSpeaking = false;
                 if (voiceActive) restartRecognition();
             };
-
-            utterance.onend = finishSpeech;
-            utterance.onerror = finishSpeech;
-            window.speechSynthesis.cancel();
-            window.speechSynthesis.speak(utterance);
+            try {
+                const response = await fetch('/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                if (!response.ok) throw new Error('Server voice unavailable');
+                const audio = new Audio(URL.createObjectURL(await response.blob()));
+                audio.onended = finishSpeech;
+                audio.onerror = finishSpeech;
+                await audio.play();
+            } catch (error) {
+                if (!('speechSynthesis' in window)) {
+                    finishSpeech();
+                    return;
+                }
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.9;
+                utterance.pitch = 1.04;
+                utterance.onend = finishSpeech;
+                utterance.onerror = finishSpeech;
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
+            }
         }
     </script>
     <script src="{{ url_for('static', filename='focus-tracker.js') }}"></script>

@@ -5,13 +5,15 @@ import re
 import json
 import math
 import ast
+import tempfile
+from functools import lru_cache
 from datetime import datetime, timedelta
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, jsonify, redirect, session, url_for, g
+from flask import Flask, render_template, request, jsonify, redirect, session, url_for, g, send_file
 from supabase import create_client, Client
 from groq import Groq
 from markitdown import MarkItDown
@@ -37,6 +39,39 @@ def get_supabase() -> Client:
 GROQ_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 md_converter = MarkItDown()
+
+LIBRITTS_SPEAKER_ID = '2902'
+tts_engine = None
+tts_reference_path = None
+
+def get_libritts_reference():
+    global tts_reference_path
+    if tts_reference_path and os.path.exists(tts_reference_path):
+        return tts_reference_path
+
+    from datasets import load_dataset
+    import soundfile as sf
+
+    dataset = load_dataset('mythicinfinity/libritts', 'all', streaming=True)
+    for split in dataset.values():
+        for sample in split:
+            if str(sample.get('speaker_id', '')).strip() != LIBRITTS_SPEAKER_ID:
+                continue
+            audio = sample.get('audio', {})
+            if audio.get('array') is None:
+                continue
+            reference = os.path.join(tempfile.gettempdir(), f'tutor-bot-libritts-{LIBRITTS_SPEAKER_ID}.wav')
+            sf.write(reference, audio['array'], audio.get('sampling_rate', 24000))
+            tts_reference_path = reference
+            return reference
+    raise RuntimeError(f'LibriTTS speaker {LIBRITTS_SPEAKER_ID} was not found.')
+
+def get_tts_engine():
+    global tts_engine
+    if tts_engine is None:
+        from TTS.api import TTS
+        tts_engine = TTS('tts_models/multilingual/multi-dataset/xtts_v2')
+    return tts_engine
 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -947,6 +982,22 @@ Ask exactly one clear question that requires the student to explain or apply the
         return jsonify({'response': completion.choices[0].message.content})
     except Exception as e:
         return jsonify({'response': f"Quiz error: {str(e)}"}), 500
+
+@app.route('/speak', methods=['POST'])
+def speak():
+    data = request.get_json() or {}
+    text = str(data.get('text', '')).strip()[:1200]
+    if not text:
+        return jsonify({'error': 'Text is required.'}), 400
+
+    try:
+        reference = get_libritts_reference()
+        engine = get_tts_engine()
+        output_path = os.path.join(tempfile.gettempdir(), 'tutor-bot-response.wav')
+        engine.tts_to_file(text=text, speaker_wav=reference, language='en', file_path=output_path)
+        return send_file(output_path, mimetype='audio/wav', max_age=0)
+    except Exception as e:
+        return jsonify({'error': f'TTS unavailable: {str(e)}'}), 503
 
 @app.route('/log_event', methods=['POST'])
 def log_event():
