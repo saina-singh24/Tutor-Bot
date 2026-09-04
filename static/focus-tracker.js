@@ -10,8 +10,11 @@
     let processing = false;
     let lastLogTime = 0;
     let lastObjectCheck = 0;
+    let lastFrameTime = 0;
     let phoneDetected = false;
     let navigationStarted = false;
+    let trackingLibrariesPromise;
+    const isMobile = window.matchMedia('(max-width: 768px)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     function isActive() {
         return localStorage.getItem(activeKey) === 'true';
@@ -26,6 +29,33 @@
             document.body.appendChild(element);
         }
         return element;
+    }
+
+    function loadScript(source) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = source;
+            script.crossOrigin = 'anonymous';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    async function ensureTrackingLibraries() {
+        if (trackingLibrariesPromise) return trackingLibrariesPromise;
+        const sources = [];
+        if (!window.Camera) sources.push('https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js');
+        if (!window.FaceMesh) sources.push('https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js');
+        if (!isMobile && !window.cocoSsd) {
+            if (!window.tf) sources.push('https://cdn.jsdelivr.net/npm/@tensorflow/tfjs');
+            sources.push('https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd');
+        }
+        trackingLibrariesPromise = sources.reduce(
+            (promise, source) => promise.then(() => loadScript(source)),
+            Promise.resolve()
+        );
+        return trackingLibrariesPromise;
     }
 
     function distance(first, second) {
@@ -135,6 +165,10 @@
 
     async function processFrame() {
         if (!running || !faceMesh || !video || processing || video.readyState < 2) return;
+        const now = Date.now();
+        const minimumFrameDelay = isMobile ? 650 : 250;
+        if (now - lastFrameTime < minimumFrameDelay) return;
+        lastFrameTime = now;
         processing = true;
         try {
             await checkForPhone();
@@ -193,23 +227,21 @@
 
     async function startTracker() {
         if (running || !isActive()) return;
-        if (!window.FaceMesh || !window.Camera) {
-            localStorage.removeItem(activeKey);
-            updateButton();
-            updateTrackingMessage(false);
-            updateStatus('Focus tracking unavailable', false);
-            return;
-        }
         try {
+            await ensureTrackingLibraries();
+            if (!window.FaceMesh || !window.Camera) throw new Error('Tracking libraries unavailable');
             video = getOrCreateElement('video', trackerVideoId);
             getOrCreateElement('canvas', trackerCanvasId);
-            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: isMobile ? 320 : 640, height: isMobile ? 240 : 480 },
+                audio: false
+            });
             video.srcObject = stream;
             await video.play();
             faceMesh = new FaceMesh({ locateFile: file => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}` });
-            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: !isMobile, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
             faceMesh.onResults(onResults);
-            if (window.cocoSsd) objectModel = await cocoSsd.load();
+            if (!isMobile && window.cocoSsd) objectModel = await cocoSsd.load();
             running = true;
             updateStatus('Focus tracking starting...', false);
             const camera = new Camera(video, { onFrame: processFrame, width: 640, height: 480 });
