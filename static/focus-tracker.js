@@ -62,6 +62,15 @@
         button.setAttribute('aria-pressed', String(active));
     }
 
+    function updateTrackingMessage(active) {
+        const message = document.getElementById('focusTrackingMessage');
+        const description = document.getElementById('focusTrackingDescription');
+        if (message) message.innerText = active ? 'Focus tracking is active' : 'Focus tracking is inactive';
+        if (description) description.innerText = active
+            ? 'Your camera is analyzed privately to detect focus. The camera view is never shown here.'
+            : 'Start a study session to privately analyze your focus. The camera view is never shown here.';
+    }
+
     function setInactiveStatus() {
         const badge = document.getElementById('statusBadge');
         if (badge) {
@@ -86,6 +95,7 @@
         await resetServerSession('/study_session/start');
         localStorage.setItem(activeKey, 'true');
         updateButton();
+        updateTrackingMessage(true);
         window.dispatchEvent(new CustomEvent('tutorLampStudySessionChange', { detail: { active: true } }));
         startTracker();
     }
@@ -94,6 +104,7 @@
         localStorage.removeItem(activeKey);
         stopTracker();
         updateButton();
+        updateTrackingMessage(false);
         setInactiveStatus();
         await resetServerSession('/study_session/stop');
         window.dispatchEvent(new CustomEvent('tutorLampStudySessionChange', { detail: { active: false } }));
@@ -185,6 +196,7 @@
         if (!window.FaceMesh || !window.Camera) {
             localStorage.removeItem(activeKey);
             updateButton();
+            updateTrackingMessage(false);
             updateStatus('Focus tracking unavailable', false);
             return;
         }
@@ -206,6 +218,7 @@
             stopTracker();
             localStorage.removeItem(activeKey);
             updateButton();
+            updateTrackingMessage(false);
             updateStatus('Camera permission required', false);
         }
     }
@@ -221,6 +234,7 @@
         if (event.newValue === 'true') startTracker();
         else {
             stopTracker();
+            updateTrackingMessage(false);
             setInactiveStatus();
         }
     });
@@ -235,7 +249,9 @@
         const button = document.getElementById('studySessionBtn');
         if (button) button.addEventListener('click', () => isActive() ? stopSession() : startSession());
         updateButton();
-        if (isActive()) startTracker();
+        const active = isActive();
+        updateTrackingMessage(active);
+        if (active) startTracker();
         else setInactiveStatus();
     });
 
