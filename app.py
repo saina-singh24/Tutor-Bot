@@ -907,9 +907,52 @@ def ask():
     except Exception as e:
         return jsonify({'response': f"AI Processing Error: {str(e)}"}), 500
 
+@app.route('/quiz', methods=['POST'])
+def quiz():
+    data = request.get_json() or {}
+    conversation = data.get('conversation', [])[-12:]
+    mode = data.get('mode', 'start')
+    question = str(data.get('question', '')).strip()
+    answer = str(data.get('answer', '')).strip()
+
+    if client is None:
+        return jsonify({'response': 'The AI assistant is not configured yet. Add GROQ_API_KEY to the environment or .env file.'}), 503
+    if not conversation and mode == 'start':
+        return jsonify({'response': 'Ask or review something with me first, then I can quiz you on it.'}), 400
+
+    if mode == 'evaluate':
+        prompt = f"""You are a patient tutor checking understanding. The student studied this conversation:
+{json.dumps(conversation)}
+
+Quiz question: {question}
+Student answer: {answer}
+
+Evaluate the answer in 2-4 sentences. Say whether it is correct, explain any missing idea clearly, and end with one brief improvement suggestion. Do not give a numeric grade."""
+    else:
+        prompt = f"""You are a tutor creating a comprehension check from this conversation:
+{json.dumps(conversation)}
+
+Ask exactly one clear question that requires the student to explain or apply the material, not merely repeat a phrase. Do not include the answer or extra questions. Start with 'Quiz question:' and keep it concise."""
+
+    try:
+        completion = client.chat.completions.create(
+            messages=[
+                {'role': 'system', 'content': 'You help students prove they understand material through short, constructive quizzes.'},
+                {'role': 'user', 'content': prompt}
+            ],
+            model='openai/gpt-oss-20b',
+            temperature=0.5,
+            max_tokens=300
+        )
+        return jsonify({'response': completion.choices[0].message.content})
+    except Exception as e:
+        return jsonify({'response': f"Quiz error: {str(e)}"}), 500
+
 @app.route('/log_event', methods=['POST'])
 def log_event():
     data = request.get_json()
+    if not data or data.get('active') is not True:
+        return jsonify({'status': 'ignored'})
     status = str(data.get('status', 'Unknown')).strip()
     status_lower = status.lower()
     is_focused = 1 if 'focused' in status_lower else 0
@@ -922,6 +965,22 @@ def log_event():
     conn.close()
 
     return jsonify({'status': 'success'})
+
+@app.route('/study_session/start', methods=['POST'])
+def start_study_session():
+    conn = sqlite3.connect(DB_NAME)
+    conn.execute('DELETE FROM focus_logs')
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'started'})
+
+@app.route('/study_session/stop', methods=['POST'])
+def stop_study_session():
+    conn = sqlite3.connect(DB_NAME)
+    conn.execute('DELETE FROM focus_logs')
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'stopped'})
 
 
 @app.route('/save_session', methods=['POST'])

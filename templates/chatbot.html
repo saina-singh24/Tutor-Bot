@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tutor Lamp - Chatbot</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd" crossorigin="anonymous"></script>
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
     <style>
         body { background: #090d16; color: #f3f4f6; font-family: sans-serif; }
@@ -40,11 +44,12 @@
                 <button id="startVoiceBtn" onclick="initVoiceSystem()" class="w-full mt-4 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-bold transition pulse-glow">
                     <span id="voiceStatusText">🎤 Start Voice Assistant</span>
                 </button>
+                <button id="quizBtn" onclick="startQuiz()" class="w-full mt-3 py-3 rounded-xl glass hover:bg-gray-800 text-indigo-300 border border-indigo-500/30 font-bold transition">Quiz Me On This</button>
             </div>
 
             <div id="chatLog" class="flex-1 overflow-y-auto space-y-3 pr-2 min-h-[240px] mb-4">
                 <div class="bg-indigo-950/30 p-4 rounded-xl border border-indigo-500/30">
-                    <span class="text-xs font-bold text-indigo-400 block mb-1">Tutor Lamp</span>
+                    <span class="text-xs font-bold text-indigo-400 block mb-1">Tutor Bot</span>
                     <p class="text-gray-200">Hi, I’m ready to help. What would you like to understand?</p>
                 </div>
             </div>
@@ -62,7 +67,7 @@
                 <button id="openCameraBtn" class="p-3 glass hover:bg-gray-800 text-indigo-400 rounded-xl transition border border-indigo-500/30" title="Open camera for a photo of your work" aria-label="Open camera for a photo of your work">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h2l1.2-2.4A2 2 0 0110.1 4h3.8a2 2 0 011.9 1.6L17 7h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V9zm9 3a3 3 0 110-6 3 3 0 010 6z"></path></svg>
                 </button>
-                <input type="text" id="manualQuery" placeholder="Ask Tutor Lamp anything..." class="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" onkeypress="if(event.key === 'Enter') sendManualQuery()">
+                <input type="text" id="manualQuery" placeholder="Ask Tutor Bot anything..." class="flex-1 bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500" onkeypress="if(event.key === 'Enter') sendManualQuery()">
                 <button onclick="sendManualQuery()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl text-sm font-semibold">Ask</button>
             </div>
         </main>
@@ -92,6 +97,39 @@
         let isProcessing = false;
         let voiceActive = false;
         let answerSpeechEnabled = false;
+        let reviewedConversation = JSON.parse(localStorage.getItem('tutor-lamp-conversation') || '[]');
+        let quizActive = false;
+        let activeQuizQuestion = '';
+
+        function rememberConversation(role, content) {
+            reviewedConversation.push({ role, content: String(content).slice(0, 2000) });
+            reviewedConversation = reviewedConversation.slice(-12);
+            localStorage.setItem('tutor-lamp-conversation', JSON.stringify(reviewedConversation));
+        }
+
+        async function startQuiz() {
+            if (!reviewedConversation.length) {
+                appendMessage('Tutor Bot', 'Ask me about a topic first, then I can quiz you on it.', 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                return;
+            }
+            const button = document.getElementById('quizBtn');
+            button.disabled = true;
+            try {
+                const response = await fetch('/quiz', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: 'start', conversation: reviewedConversation })
+                });
+                const data = await response.json();
+                activeQuizQuestion = data.response || '';
+                quizActive = Boolean(activeQuizQuestion);
+                appendMessage('Tutor Bot', activeQuizQuestion, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                rememberConversation('assistant', activeQuizQuestion);
+            } catch (error) {
+                appendMessage('Tutor Bot', 'I could not create a quiz right now.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
+            } finally {
+                button.disabled = false;
+            }
+        }
 
         function handleFileSelect(event) {
             const file = event.target.files[0];
@@ -173,11 +211,13 @@
             input.value = '';
             clearAttachment();
             appendMessage('Student', displayMsg, 'text-gray-300', 'bg-gray-800/40');
+            rememberConversation('user', displayMsg);
 
             try {
                 const response = await fetch('/ask', { method: 'POST', body: formData });
                 const data = await response.json();
-                appendMessage('Tutor Lamp', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                appendMessage('Tutor Bot', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                rememberConversation('assistant', data.response);
                 speakText(data.response, false);
             } catch (error) {
                 appendMessage('Tutor Lamp', 'Error connecting to Tutor Lamp.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
@@ -234,12 +274,14 @@
                 if (!query) {
                     const greeting = "I'm listening, go ahead!";
                     appendMessage('Tutor Lamp', greeting, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                    rememberConversation('assistant', greeting);
                     speakText(greeting, answerSpeechEnabled && voiceActive);
                     isProcessing = false;
                     return;
                 }
 
                 appendMessage('Student', query, 'text-gray-300', 'bg-gray-800/40');
+                rememberConversation('user', query);
                 await queryAI(query);
                 isProcessing = false;
             };
@@ -282,9 +324,22 @@
             const formData = new FormData();
             formData.append('query', query);
             try {
-                const response = await fetch('/ask', { method: 'POST', body: formData });
+                let response;
+                if (quizActive) {
+                    response = await fetch('/quiz', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode: 'evaluate', question: activeQuizQuestion, answer: query, conversation: reviewedConversation })
+                    });
+                } else {
+                    response = await fetch('/ask', { method: 'POST', body: formData });
+                }
                 const data = await response.json();
-                appendMessage('Tutor Lamp', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                appendMessage('Tutor Bot', data.response, 'text-indigo-400', 'bg-indigo-950/30 border-indigo-500/30');
+                rememberConversation('assistant', data.response);
+                if (quizActive) {
+                    quizActive = false;
+                    activeQuizQuestion = '';
+                }
                 speakText(data.response, answerSpeechEnabled && voiceActive);
             } catch (error) {
                 appendMessage('Tutor Lamp', 'Error connecting to AI.', 'text-red-400', 'bg-red-950/30 border-red-500/30');
@@ -314,6 +369,7 @@
             window.speechSynthesis.speak(utterance);
         }
     </script>
+    <script src="{{ url_for('static', filename='focus-tracker.js') }}"></script>
     <script src="{{ url_for('static', filename='sidebar.js') }}"></script>
 </body>
 </html>
