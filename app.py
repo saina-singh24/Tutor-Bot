@@ -41,7 +41,7 @@ GROQ_KEY = os.environ.get("GROQ_API_KEY")
 client = Groq(api_key=GROQ_KEY) if GROQ_KEY else None
 md_converter = MarkItDown()
 
-LIBRITTS_SPEAKER_ID = '2902'
+LIBRITTS_SPEAKER_ID = '1089'
 tts_engine = None
 tts_reference_path = None
 HAS_TTS = False
@@ -1022,7 +1022,16 @@ def speak():
         reference = get_libritts_reference()
         engine = get_tts_engine()
         output_path = os.path.join(tempfile.gettempdir(), 'tutor-bot-response.wav')
-        engine.tts_to_file(text=text, speaker_wav=reference, language='en', file_path=output_path)
+        engine.tts_to_file(
+            text=text,
+            speaker_wav=reference,
+            language='en',
+            file_path=output_path,
+            temperature=0.65,
+            length_scale=1.05,
+            repetition_penalty=2.0,
+            enable_text_splitting=True
+        )
         return send_file(output_path, mimetype='audio/wav', max_age=0)
     except Exception as e:
         return jsonify({'error': f'TTS unavailable: {str(e)}'}), 503

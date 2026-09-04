@@ -383,11 +383,23 @@
                 if (voiceActive) restartRecognition();
             };
             try {
-                const response = await fetch('/speak', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text }) });
+                const response = await fetch('/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
                 if (!response.ok) throw new Error('Server voice unavailable');
-                const audio = new Audio(URL.createObjectURL(await response.blob()));
+                const audioUrl = URL.createObjectURL(await response.blob());
+                const audio = new Audio(audioUrl);
                 audio.onended = finishSpeech;
-                audio.onerror = finishSpeech;
+                audio.onerror = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    finishSpeech();
+                };
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    finishSpeech();
+                };
                 await audio.play();
             } catch (error) {
                 if (!('speechSynthesis' in window)) {
@@ -395,8 +407,15 @@
                     return;
                 }
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 0.9;
-                utterance.pitch = 1.04;
+                const voices = window.speechSynthesis.getVoices();
+                const naturalVoice = voices.find(voice =>
+                    voice.lang.startsWith('en') &&
+                    (voice.name.includes('Natural') || voice.name.includes('Google') ||
+                        voice.name.includes('Neural') || voice.name.includes('Samantha'))
+                ) || voices.find(voice => voice.lang.startsWith('en'));
+                if (naturalVoice) utterance.voice = naturalVoice;
+                utterance.rate = 0.95;
+                utterance.pitch = 1.0;
                 utterance.onend = finishSpeech;
                 utterance.onerror = finishSpeech;
                 window.speechSynthesis.cancel();
