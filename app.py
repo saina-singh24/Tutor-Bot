@@ -22,6 +22,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tutor-lamp-development-key')
+app.permanent_session_lifetime = timedelta(days=30)
 
 # Supabase Configuration
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
@@ -761,10 +762,12 @@ def extract_file_content(file_path):
 
 @app.route('/')
 def landing():
-    return render_template('landing.html')
+    return render_template('landing.html', supabase_url=SUPABASE_URL or '', supabase_key=SUPABASE_KEY or '')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if session.get('user') and request.method == 'GET':
+        return redirect(url_for('index'))
     supabase = get_supabase()
     configured = supabase is not None
 
@@ -783,11 +786,13 @@ def login():
             if action == 'signup':
                 res = supabase.auth.sign_up({"email": email, "password": password})
                 if res.user:
+                    session.permanent = True
                     session['user'] = {'email': res.user.email, 'id': res.user.id}
                     return redirect(url_for('index'))
             elif action == 'login':
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 if res.user:
+                    session.permanent = True
                     session['user'] = {'email': res.user.email, 'id': res.user.id}
                     return redirect(url_for('index'))
         except Exception as err:
@@ -806,6 +811,7 @@ def set_session():
     email = data.get('email')
     user_id = data.get('id')
     if email and user_id:
+        session.permanent = True
         session['user'] = {'email': email, 'id': user_id}
         return jsonify({'status': 'success'}), 200
     return jsonify({'status': 'invalid data'}), 400
@@ -836,6 +842,7 @@ def google_callback():
         try:
             res = supabase.auth.exchange_code_for_session({"auth_code": code})
             if res.user:
+                session.permanent = True
                 session['user'] = {
                     'email': res.user.email,
                     'id': res.user.id
@@ -853,7 +860,13 @@ def logout():
         except Exception:
             pass
     session.clear()
-    return redirect(url_for('landing'))
+    return redirect(url_for('landing', signed_out='1'))
+
+@app.before_request
+def require_login_for_study_pages():
+    protected_paths = ('/app', '/workspace', '/chatbot', '/analytics')
+    if request.path.rstrip('/') in protected_paths and not session.get('user'):
+        return redirect(url_for('login', next=request.path))
 
 @app.route('/app', strict_slashes=False)
 @app.route('/app/', strict_slashes=False)
