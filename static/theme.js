@@ -57,6 +57,7 @@
             :root { --user-accent: ${defaultAccent}; --user-accent-text: #101813; --user-accent-soft: #c8f06b26; }
             [data-theme="light"] body { background: #f5f7f5 !important; color: #17231d !important; }
             [data-theme="dark"] body { background: #090d16 !important; color: #f3f4f6 !important; }
+            body .glass { background: linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.035)) !important; border: 1px solid rgba(255,255,255,.14) !important; box-shadow: inset 0 1px rgba(255,255,255,.10), 0 18px 42px rgba(0,0,0,.22); backdrop-filter: blur(18px) saturate(125%); }
             [data-theme="light"] body .glass { background: rgba(255,255,255,.92) !important; border-color: rgba(23,35,29,.16) !important; }
             [data-theme="light"] body input { background: #ffffff !important; color: #17231d !important; border-color: #aab8af !important; }
             [data-theme="light"] body input::placeholder { color: #65756c !important; }
@@ -65,7 +66,7 @@
             [data-theme="light"] body .bg-gray-800\/60, [data-theme="light"] body .bg-gray-800\/40 { background: #e8eee9 !important; border-color: #c4d0c7 !important; }
             [data-theme="light"] body .bg-gray-900 { background: #ffffff !important; }
             [data-theme="light"] body .bg-black { background: #dce5df !important; }
-            [data-theme="dark"] body .glass { background: rgba(17,24,39,.7); }
+            [data-theme="dark"] body .glass { background: linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.035)) !important; }
             .text-indigo-400, .text-indigo-300, .text-indigo-200 { color: var(--user-accent) !important; }
             .bg-indigo-600 { background-color: var(--user-accent) !important; color: var(--user-accent-text) !important; }
             .bg-indigo-900, .bg-indigo-950 { background-color: var(--user-accent-soft) !important; }

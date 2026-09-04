@@ -31,7 +31,7 @@
 		.brand-mark { width: 31px; height: 31px; display: grid; place-items: center; border-radius: 10px 10px 10px 3px; background: var(--lime); color: #0b0912; font-size: 17px; box-shadow: 0 0 24px var(--user-accent-soft); }
 		.nav-link { color: var(--muted); text-decoration: none; font-weight: 600; font-size: 14px; }
 		.hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 72px; align-items: center; padding: 76px 0 92px; }
-		.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #57702d; text-transform: uppercase; letter-spacing: .13em; font-size: 11px; font-weight: 700; }
+		.eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--user-accent); text-transform: uppercase; letter-spacing: .13em; font-size: 11px; font-weight: 700; }
 		.eyebrow::before { content: ''; width: 23px; height: 2px; background: var(--coral); }
 		h1, h2, h3 { font-family: 'Space Grotesk', sans-serif; letter-spacing: -.055em; }
 		h1 { max-width: 650px; font-size: clamp(3.5rem, 7vw, 6.3rem); line-height: .93; margin: 20px 0 26px; }
@@ -47,8 +47,8 @@
 		.lamp-card::after { content: ''; position: absolute; width: 120px; height: 120px; right: -34px; top: -42px; border-radius: 50%; border: 1px solid var(--user-accent); opacity: .7; box-shadow: 0 0 22px var(--user-accent-soft); }
 		.mini-label { color: var(--lime); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
 		.lamp-card h2 { margin: 17px 0 0; font-size: 42px; line-height: 1; }
-		.signal { display: flex; align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid rgba(24,37,31,.15); color: var(--muted); font-size: 13px; }
-		.signal-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px rgba(200,240,107,.13); }
+		.signal { display: flex; align-items: center; gap: 10px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,.14); color: var(--muted); font-size: 13px; }
+		.signal-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 5px var(--user-accent-soft); }
 		.section { padding: 82px 0; border-top: 1px solid var(--line); }
 		.section-head { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 35px; }
 		h2.section-title { max-width: 500px; font-size: 43px; line-height: 1.02; margin: 0; }
@@ -98,10 +98,10 @@
 			<main>
 				<section class="hero">
 					<div>
-						<span class="eyebrow">A calmer way to study</span>
-						<h1>Make focus feel a little more natural.</h1>
-						<p class="hero-copy">Tutor Lamp brings an attentive AI tutor, live focus cues, and a simple study rhythm into one quiet workspace.</p>
-						<div class="actions"><a class="primary" href="/login">Enter the workspace <span class="arrow">↗</span></a><span class="hero-note">Built for curious minds.</span></div>
+						<span class="eyebrow">Your intelligent study space</span>
+						<h1>Meet your<br>study copilot.</h1>
+						<p class="hero-copy">Ask better questions. Stay focused. Keep moving.</p>
+						<div class="actions"><a class="primary" href="/login">Get started <span class="arrow">↗</span></a></div>
 					</div>
 					<div class="orbit" aria-label="Tutor Lamp focus monitor preview">
 						<div class="lamp-card"><div><span class="mini-label">Live study signal</span><h2>Stay with<br>the thread.</h2></div><div class="signal"><span class="signal-dot"></span> Focus tracking is ready</div></div>
@@ -109,25 +109,15 @@
 				</section>
 
 				<section class="section">
-					<div class="section-head"><h2 class="section-title">Everything you need to keep learning.</h2><p class="section-intro">A small toolkit for turning “I’m stuck” into a next step that makes sense.</p></div>
+					<div class="section-head"><h2 class="section-title">One quiet place to learn.</h2></div>
 					<div class="features">
-						<article class="feature"><span class="feature-number">01 / TUTOR</span><div><h3>Ask without breaking flow.</h3><p>Get concise explanations from an AI tutor through text, voice, or an uploaded note.</p></div></article>
-						<article class="feature"><span class="feature-number">02 / FOCUS</span><div><h3>Notice when attention drifts.</h3><p>Camera-based focus cues gently surface distraction so you can return to the work.</p></div></article>
-						<article class="feature"><span class="feature-number">03 / RHYTHM</span><div><h3>Work in a healthy rhythm.</h3><p>Use the built-in Pomodoro timer to make deep work and real breaks easier to start.</p></div></article>
-					</div>
-				</section>
-
-				<section class="section">
-					<div class="section-head"><h2 class="section-title">On the horizon.</h2><p class="section-intro">The next layer of support is already taking shape.</p></div>
-					<div class="roadmap">
-						<article class="roadmap-item"><span class="status">Coming soon</span><div><h3>Personal study paths</h3><p>Turn a goal into a flexible sequence of focused sessions and small wins.</p></div></article>
-						<article class="roadmap-item"><span class="status">Exploring</span><div><h3>Progress reflections</h3><p>See patterns across your sessions and understand what helps you focus best.</p></div></article>
-						<article class="roadmap-item"><span class="status">Exploring</span><div><h3>Shared study rooms</h3><p>Work alongside friends with gentle accountability and shared session goals.</p></div></article>
-						<article class="roadmap-item"><span class="status">Coming soon</span><div><h3>More ways to learn</h3><p>Practice quizzes, flashcards, and richer document conversations in one place.</p></div></article>
+						<article class="feature"><span class="feature-number">01</span><div><h3>Ask anything.</h3><p>Clear answers when you need them.</p></div></article>
+						<article class="feature"><span class="feature-number">02</span><div><h3>Find your focus.</h3><p>Gentle cues to bring you back.</p></div></article>
+						<article class="feature"><span class="feature-number">03</span><div><h3>Make it a rhythm.</h3><p>Simple tools for better sessions.</p></div></article>
 					</div>
 				</section>
 			</main>
-			<footer><span>© Tutor Lamp</span><span>Make room for better questions.</span></footer>
+			<footer><span>© Tutor Bot</span></footer>
 		</div>
 	</div>
 </body>
